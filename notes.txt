@@ -1,0 +1,8 @@
+# Initially, run:
+bash .ci/linux-prepare.sh
+DPDK=true bash .ci/linux-build.sh
+bash .ci/linux-start-dpdk.sh
+
+
+# Ensure that the build was successful:
+which ovs-vswitchd
