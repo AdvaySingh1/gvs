@@ -27,7 +27,7 @@ sudo ./boot.sh
 
 # 7. Configure with DPDK and GigaFlow
 cd /tmp/gvs/gvs/build
-sudo .././configure --with-dpdk=static CC=gcc CFLAGS="-g -O2 -DGIGAFLOW_CACHE_ENABLED=1"
+sudo .././configure --with-dpdk=static CC=gcc
 
 # 8. Build
 sudo make -j4
@@ -44,9 +44,6 @@ echo 'export DB_SOCK=/usr/local/var/run/openvswitch/db.sock' | sudo tee -a /root
 # 11. Source the profile
 source ~/.profile
 
-# 12. Start OVS with DPDK
-bash .ci/linux-start-dpdk.sh
 
 
-# Ensure that the build was successful:
-which ovs-vswitchd
+sudo tail -f /usr/local/var/log/openvswitch/ovs-vswitchd.log
