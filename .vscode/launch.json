@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug ovs-vswitchd",
+        "type": "cppdbg",
+        "request": "attach",
+        "processId": "${command:pickProcess}",
+        "program": "${workspaceFolder}/build/vswitchd/ovs-vswitchd"
+      },
+      {
+        "name": "Debug ovsdb",
+        "type": "cppdbg",
+        "request": "attach",
+        "processId": "${command:pickProcess}",
+        "program": "${workspaceFolder}/build/ovsdb/ovsdb-server"
+      }
+    ]
+ }
