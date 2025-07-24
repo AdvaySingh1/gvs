@@ -47,3 +47,8 @@ source ~/.profile
 
 
 sudo tail -f /usr/local/var/log/openvswitch/ovs-vswitchd.log
+
+
+
+view logs
+/usr/local/var/log/openvswitch/ovs-vswitched.log

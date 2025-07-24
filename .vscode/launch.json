@@ -1,19 +1,39 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "Debug ovs-vswitchd",
-        "type": "cppdbg",
-        "request": "attach",
-        "processId": "${command:pickProcess}",
-        "program": "${workspaceFolder}/build/vswitchd/ovs-vswitchd"
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug ovs-vswitchd",
+      "type": "cppdbg",
+      "request": "attach",
+      "processId": "${command:pickProcess}",
+      "program": "/usr/local/sbin/ovs-vswitchd",
+      "env": {
+        "LD_LIBRARY_PATH": "/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu"
       },
-      {
-        "name": "Debug ovsdb",
-        "type": "cppdbg",
-        "request": "attach",
-        "processId": "${command:pickProcess}",
-        "program": "${workspaceFolder}/build/ovsdb/ovsdb-server"
-      }
-    ]
- }
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    },
+    {
+      "name": "Debug ovsdb",
+      "type": "cppdbg",
+      "request": "attach",
+      "processId": "${command:pickProcess}",
+      "program": "/usr/local/sbin/ovsdb-server",
+      "env": {
+        "LD_LIBRARY_PATH": "/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu"
+      },
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}
