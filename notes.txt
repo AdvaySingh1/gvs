@@ -52,3 +52,29 @@ sudo tail -f /usr/local/var/log/openvswitch/ovs-vswitchd.log
 
 view logs
 /usr/local/var/log/openvswitch/ovs-vswitched.log
+
+
+To enable packet debugging
+
+# Enable debug logging for the datapath netdev module
+ovs-appctl vlog/set dpif_netdev:dbg
+
+# Enable debug logging for general datapath operations
+ovs-appctl vlog/set dpif:dbg
+
+# Enable debug logging for netdev operations
+ovs-appctl vlog/set netdev:dbg
+
+# Enable debug logging for bridge operations
+ovs-appctl vlog/set bridge:dbg
+
+
+To check interface statistics
+
+
+# Check interface statistics
+ovs-vsctl list interface ens16f0
+ovs-vsctl list interface ens16f1
+
+# Check port statistics
+ovs-ofctl dump-ports br0
