@@ -78,3 +78,136 @@ ovs-vsctl list interface ens16f1
 
 # Check port statistics
 ovs-ofctl dump-ports br0
+
+
+
+
+root@advay:/home/advay/gigaflow/gvs# sudo gdb -p $(pgrep ovs-vswitchd)
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.2) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word".
+Attaching to process 421286
+[New LWP 421288]
+[New LWP 421289]
+[New LWP 421290]
+[New LWP 421291]
+[New LWP 421292]
+[New LWP 421293]
+[New LWP 421294]
+[New LWP 421295]
+[New LWP 421296]
+[New LWP 421297]
+[New LWP 421298]
+[New LWP 421299]
+[New LWP 421300]
+[New LWP 421301]
+[New LWP 421302]
+[New LWP 421303]
+[New LWP 421304]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+--Type <RET> for more, q to quit, c to continue without paging--
+0x00007f2d1e51ebbf in __GI___poll (fds=fds@entry=0x555df8c05800, nfds=nfds@entry=10, timeout=timeout@entry=3992)
+    at ../sysdeps/unix/sysv/linux/poll.c:29
+29      ../sysdeps/unix/sysv/linux/poll.c: No such file or directory.
+(gdb) break dpif_recv
+Breakpoint 1 at 0x555dd518a4a0: file .././lib/dpif.c, line 1612.
+(gdb) break upcall_receive
+Breakpoint 2 at 0x555dd513e1f0: file .././ofproto/ofproto-dpif-upcall.c, line 1153.
+(gdb) catch signal SIGSEGV
+Catchpoint 3 (signal SIGSEGV)
+(gdb) continue
+Continuing.
+[New Thread 0x7f2d1eb32000 (LWP 421557)]
+[Switching to Thread 0x7f2d14ff9400 (LWP 421298)]
+
+Thread 12 "handler11" hit Breakpoint 1, dpif_recv (dpif=0x555df8bdeb50, handler_id=9, upcall=upcall@entry=0x7f2d14fc8940, 
+    buf=buf@entry=0x7f2d14fb1140) at .././lib/dpif.c:1612
+1612    .././lib/dpif.c: No such file or directory.
+(gdb) next
+[New Thread 0x7f2d1eb32000 (LWP 421630)]
+[Thread 0x7f2d1eb32000 (LWP 421557) exited]
+[Switching to Thread 0x7f2d07fff400 (LWP 421299)]
+
+Thread 13 "handler12" hit Breakpoint 1, dpif_recv (dpif=0x555df8bdeb50, handler_id=10, upcall=upcall@entry=0x7f2d07fce940, 
+    buf=buf@entry=0x7f2d07fb7140) at .././lib/dpif.c:1612
+1612    in .././lib/dpif.c
+(gdb) 
+[Switching to Thread 0x7f2d1e404400 (LWP 421288)]
+
+Thread 2 "handler1" hit Breakpoint 1, dpif_recv (dpif=0x555df8bdeb50, handler_id=0, upcall=upcall@entry=0x7f2d1e3d3940, 
+    buf=buf@entry=0x7f2d1e3bc140) at .././lib/dpif.c:1612
+1612    in .././lib/dpif.c
+(gdb) continue
+Continuing.
+[Switching to Thread 0x7f2d16ffd400 (LWP 421294)]
+
+Thread 8 "handler7" hit Breakpoint 1, dpif_recv (dpif=0x555df8bdeb50, handler_id=5, upcall=upcall@entry=0x7f2d16fcc940, 
+    buf=buf@entry=0x7f2d16fb5140) at .././lib/dpif.c:1612
+1612    in .././lib/dpif.c
+(gdb) delete 1
+(gdb) delete 2
+(gdb) continue
+Continuing.
+
+Thread 8 "handler7" hit Catchpoint 3 (signal SIGSEGV), flow_wildcards_init_catchall (wc=wc@entry=0x2a008) at .././lib/flow.c:1820
+1820    .././lib/flow.c: No such file or directory.
+(gdb) bt
+#0  flow_wildcards_init_catchall (wc=wc@entry=0x2a008) at .././lib/flow.c:1820
+#1  0x0000555dd515205c in xlate_wc_init (ctx=0x7f2d16fb3820) at .././ofproto/ofproto-dpif-xlate.c:7599
+#2  xlate_actions (xin=xin@entry=0x7f2d16fb4930, xout=xout@entry=0x7f2d16fd99d8) at .././ofproto/ofproto-dpif-xlate.c:7854
+#3  0x0000555dd5140997 in upcall_xlate (wc=0x7f2d16fd9a30, odp_actions=0x7f2d16fd99f0, upcall=0x7f2d16fd9970, udpif=0x555df8bdf030)
+    at .././ofproto/ofproto-dpif-upcall.c:1247
+#4  process_upcall (udpif=udpif@entry=0x555df8bdf030, upcall=upcall@entry=0x7f2d16fd9970, 
+    odp_actions=odp_actions@entry=0x7f2d16fd99f0, wc=wc@entry=0x7f2d16fd9a30) at .././ofproto/ofproto-dpif-upcall.c:1473
+#5  0x0000555dd514152d in recv_upcalls (handler=<optimized out>, handler=<optimized out>) at .././ofproto/ofproto-dpif-upcall.c:881
+#6  0x0000555dd5141a0c in udpif_upcall_handler (arg=0x555df8bdfd08) at .././ofproto/ofproto-dpif-upcall.c:797
+#7  0x0000555dd5215827 in ovsthread_wrapper (aux_=<optimized out>) at .././lib/ovs-thread.c:422
+#8  0x00007f2d1e810609 in start_thread (arg=<optimized out>) at pthread_create.c:477
+#9  0x00007f2d1e52b353 in clone () at ../sysdeps/unix/sysv/linux/x86_64/clone.S:95
+(gdb) info locals
+No locals.
+(gdb) print wc
+$1 = (struct flow_wildcards *) 0x2a008
+(gdb) print *wc
+Cannot access memory at address 0x2a008
+(gdb) frame 1
+#1  0x0000555dd515205c in xlate_wc_init (ctx=0x7f2d16fb3820) at .././ofproto/ofproto-dpif-xlate.c:7599
+7599    .././ofproto/ofproto-dpif-xlate.c: No such file or directory.
+(gdb) info locals
+i = <optimized out>
+individual_wildcards = 0x2a008
+individual_wildcards = <optimized out>
+i = <optimized out>
+(gdb) print ctx
+$2 = (struct xlate_ctx *) 0x7f2d16fb3820
+(gdb) print ctx->wc
+$3 = (struct flow_wildcards *) 0x7f2d16fd9a30
+(gdb) q
+A debugging session is active.
+
+        Inferior 1 [process 421286] will be detached.
+
+
+sudo gdb /usr/local/sbin/ovs-vswitchd $(pgrep ovs-vswitchd)
+
+
+
+/* Initializes 'wc' as a set of wildcards that matches every packet. */
+void
+flow_wildcards_init_catchall(struct flow_wildcards *wc)
+{
+    memset(&wc->masks, 0, sizeof wc->masks);
+}

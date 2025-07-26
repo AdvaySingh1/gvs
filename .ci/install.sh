@@ -6,7 +6,7 @@ apt-get update
 
 mkdir -p /tmp/gvs
 rm -rf /tmp/gvs/ovs
-git clone https://github.com/openvswitch/ovs.git /tmp/gvs/ovs
+cp -r . /tmp/gvs/ovs
 cd /tmp/gvs/ovs
 git checkout main
 
@@ -16,7 +16,7 @@ apt-get update
 apt-get install -y make cmake llvm-12 clang-12 meson ninja-build autotools-dev autoconf libtool systemtap-sdt-dev
 
 ./boot.sh
-./configure
+./configure --with-dpdk=static CFLAGS="-g -O0 -no-pie" --enable-debug
 make -j4
 make install
 
