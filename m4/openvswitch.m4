@@ -691,3 +691,15 @@ AC_DEFUN([OVS_CHECK_UNWIND],
    fi
    AM_CONDITIONAL([HAVE_UNWIND], [test "$HAVE_UNWIND" = yes])
    AC_SUBST([HAVE_UNWIND])])
+
+dnl Checks for sdnetdrv.
+AC_DEFUN([OVS_CHECK_SDNETDRV],
+  [AC_CHECK_LIB([sdnetdrv], [XilSdnetTargetInit],
+   [AC_CHECK_HEADERS([sdnet/sdnet_0_defs.h], [HAVE_P4SDNET_OFFLOAD=yes], [HAVE_P4SDNET_OFFLOAD=no])],
+   [HAVE_P4SDNET_OFFLOAD=no])
+   if test "$HAVE_P4SDNET_OFFLOAD" = yes; then
+     AC_DEFINE([HAVE_P4SDNET_OFFLOAD], [1], [Define to 1 if libsdnetdrv is detected.])
+     LIBS="$LIBS -lsdnetdrv"
+   fi
+   AM_CONDITIONAL([HAVE_P4SDNET_OFFLOAD], [test "$HAVE_P4SDNET_OFFLOAD" = yes])
+   AC_SUBST([HAVE_P4SDNET_OFFLOAD])])

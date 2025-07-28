@@ -33,13 +33,14 @@
 #include "packets.h"
 #include "uuid.h"
 
+#include "nfp_env.h"
 // VLOG_DEFINE_THIS_MODULE(netdev_offload_dpdk);
 VLOG_DEFINE_THIS_MODULE(netdev_offload_dpdk_p4sdnet); // annus
 static struct vlog_rate_limit rl = VLOG_RATE_LIMIT_INIT(600, 600);
 
 // /* SDNet PCIe variables for Gigaflow offload */
-// #define XILINX_FPGA_SYSFS_FILE  "/sys/bus/pci/devices/0000:00:11.0/resource2"
-// #define P4_SDNET_BASE_ADDRESS   0x18000
+#define P4_SDNET_BASE_ADDRESS 0x18000
+#define XILINX_FPGA_SYSFS_FILE "/sys/devices/pci0000:00/0000:00:10.0/resource2"
 
 /* Gigaflow P4SDNet key lengths */
 #define GIGAFLOW_KEY_LEN 29
@@ -183,6 +184,10 @@ enum p4sdnet_action_param_bytes
 /* offload context for p4sdnet offload */
 struct p4sdnet_offload_context
 {
+    XilSdnetEnvIf env_if;
+    XilSdnetTargetCtx target_ctx;
+    XilSdnetTableCtx *table_ctx_ptr[P4SDNET_GIGAFLOW_TABLE_MAX];
+    uint32_t action_id[P4SDNET_GIGAFLOW_TABLE_MAX][P4SDNET_GIGAFLOW_ACTION_MAX];
 };
 
 static struct p4sdnet_offload_context p4sdnet_offload_ctx;
@@ -3175,24 +3180,62 @@ const struct netdev_flow_api netdev_offload_dpdk = {
 };
 
 static int
-netdev_offload_p4sdnet_init_flow_api(struct netdev *netdev)
+netdev_offload_p4sdnet_init_flow_api(struct netdev *netdev OVS_UNUSED)
 {
-    int ret = EOPNOTSUPP;
-
-    if (netdev_vport_is_vport_class(netdev->netdev_class) && !strcmp(netdev_get_dpif_type(netdev), "system"))
+    VLOG_INFO("calling netdev_p4sdnet_offload_dpdk_init_flow_api()\n");
+    if (netdev_p4sdnet_is_flow_api_initialized())
     {
-        VLOG_DBG("%s: vport belongs to the system datapath. Skipping.",
-                 netdev_get_name(netdev));
-        return EOPNOTSUPP;
+        VLOG_INFO("netdev_p4sdnet_flow_api already initialized!\n");
+        return 0;
     }
 
-    if (netdev_dpdk_flow_api_supported(netdev))
-    {
-        ret = offload_data_init(netdev);
-    }
+#ifdef HAVE_P4SDNET_OFFLOAD
+    VLOG_INFO("netdev_p4sdnet_offload_dpdk_init_flow_api()"
+              " -> HAVE_P4SDNET_OFFLOAD is enabled\n");
 
-    return ret;
+    XilSdnetReturnType status;
+
+    /* create the environment pointer */
+    status = NfpCreateEnvIf(&p4sdnet_offload_ctx.env_if,
+                            P4_SDNET_BASE_ADDRESS, XILINX_FPGA_SYSFS_FILE);
+    VLOG_INFO("NfpCreateEnvIf() -> Result = %d\n", status);
+
+    if (status == XIL_SDNET_SUCCESS)
+    {
+        /* p4sdnet flow api is available for use, no need to reinitialize */
+        netdev_p4sdnet_set_flow_api_initialized();
+    }
+#endif
+    return 0;
 }
+
+// static int
+// netdev_offload_p4sdnet_init_flow_api(struct netdev *netdev)
+// {
+//     //     XilSdnetReturnType status;
+//     //     VLOG_INFO("calling netdev_p4sdnet_offload_dpdk_init_flow_api()\n");
+//     //     if (netdev_p4sdnet_is_flow_api_initialized())
+//     //     {
+//     //         VLOG_INFO("netdev_p4sdnet_flow_api already initialized!\n");
+//     //         return 0;
+//     //     }
+
+// #ifdef HAVE_P4SDNET_OFFLOAD
+//     /* create the environment pointer */
+//     // status = NfpCreateEnvIf(&p4sdnet_offload_ctx.env_if,
+//     //                         P4_SDNET_BASE_ADDRESS, XILINX_FPGA_SYSFS_FILE);
+//     // VLOG_INFO("NfpCreateEnvIf() -> Result = %d\n", status);
+
+//     // if (status == XIL_SDNET_SUCCESS)
+//     // {
+//     //     netdev_p4sdnet_set_flow_api_initialized();
+//     //     return 0;
+//     // }
+//     netdev_p4sdnet_set_flow_api_initialized();
+//     return 0;
+// #endif
+//     return EOPNOTSUPP;
+// }
 
 static int
 netdev_offload_p4sdnet_uninit_flow_api(struct netdev *netdev)
@@ -3263,8 +3306,9 @@ const struct netdev_flow_api netdev_offload_dpdk_p4sdnet = {
     .type = "dpdk_p4sdnet_flow_api",
     .flow_put = netdev_offload_p4sdnet_flow_put,
     .flow_del = netdev_offload_p4sdnet_flow_del,
+    .init_flow_api = netdev_offload_dpdk_init_flow_api,
     .init_flow_api = netdev_offload_p4sdnet_init_flow_api,
-    .uninit_flow_api = netdev_offload_p4sdnet_uninit_flow_api,
+    // .uninit_flow_api = netdev_offload_p4sdnet_uninit_flow_api,
     .flow_get = netdev_offload_p4sdnet_flow_get,
     .flow_flush = netdev_offload_p4sdnet_flow_flush,
     .hw_miss_packet_recover = netdev_offload_p4sdnet_hw_miss_packet_recover,
