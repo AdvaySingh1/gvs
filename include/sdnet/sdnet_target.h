@@ -107,139 +107,140 @@
 /* SECTION: Header includes */
 /****************************************************************************************************************************************************/
 
-#include "sdnet_table.h"
+#include "sdnet/sdnet_table.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-/****************************************************************************************************************************************************/
-/* SECTION: Type definitions */
-/****************************************************************************************************************************************************/
+    /****************************************************************************************************************************************************/
+    /* SECTION: Type definitions */
+    /****************************************************************************************************************************************************/
 
-/** Wrapper structure to group table name with table configuration */
-typedef struct XilSdnetTargetTableConfig
-{
-    const char          *NameStringPtr; /**< Table control plane name */
-    XilSdnetTableConfig Config;         /**< Table configuration */
-} XilSdnetTargetTableConfig;
+    /** Wrapper structure to group table name with table configuration */
+    typedef struct XilSdnetTargetTableConfig
+    {
+        const char *NameStringPtr;  /**< Table control plane name */
+        XilSdnetTableConfig Config; /**< Table configuration */
+    } XilSdnetTargetTableConfig;
 
-/** Top level configuration data structure describing all control plane manageable elements in an SDNet design */
-typedef struct XilSdnetTargetConfig
-{
-    XilSdnetEndian              Endian;         /**< Global endianness setting - applies to all control plane drivers instantiated by the target */
-    uint32_t                    TableListSize;  /**< Number of tables present in the design */
-    XilSdnetTargetTableConfig   **TableListPtr; /**< Pointer to list holding the configuration of each table present */
-} XilSdnetTargetConfig;
+    /** Top level configuration data structure describing all control plane manageable elements in an SDNet design */
+    typedef struct XilSdnetTargetConfig
+    {
+        XilSdnetEndian Endian;                    /**< Global endianness setting - applies to all control plane drivers instantiated by the target */
+        uint32_t TableListSize;                   /**< Number of tables present in the design */
+        XilSdnetTargetTableConfig **TableListPtr; /**< Pointer to list holding the configuration of each table present */
+    } XilSdnetTargetConfig;
 
-/** Forward declaration to support context structure declaration */
-typedef struct XilSdnetTargetPrivateCtx XilSdnetTargetPrivateCtx;
+    /** Forward declaration to support context structure declaration */
+    typedef struct XilSdnetTargetPrivateCtx XilSdnetTargetPrivateCtx;
 
-/** Holds context information needed by the target driver's API */
-typedef struct XilSdnetTargetCtx
-{
-    XilSdnetTargetPrivateCtx *PrivateCtxPtr;    /**< Internal context data used by driver implementation */
-} XilSdnetTargetCtx;
+    /** Holds context information needed by the target driver's API */
+    typedef struct XilSdnetTargetCtx
+    {
+        XilSdnetTargetPrivateCtx *PrivateCtxPtr; /**< Internal context data used by driver implementation */
+    } XilSdnetTargetCtx;
 
-/****************************************************************************************************************************************************/
-/* SECTION: Target function prototypes */
-/****************************************************************************************************************************************************/
+    /****************************************************************************************************************************************************/
+    /* SECTION: Target function prototypes */
+    /****************************************************************************************************************************************************/
 
-/**
- * Initialization function for the SDNet Target driver.
- *
- * @param[in,out] CtxPtr        Pointer to an uninitialized SDNet Target context structure instance.
- *                              Is populated by function execution.
- *
- * @param[in] EnvIfPtr          Pointer to environment interface definition
- *
- * @param[in] ConfigPtr         Pointer to driver configuration definition
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
+    /**
+     * Initialization function for the SDNet Target driver.
+     *
+     * @param[in,out] CtxPtr        Pointer to an uninitialized SDNet Target context structure instance.
+     *                              Is populated by function execution.
+     *
+     * @param[in] EnvIfPtr          Pointer to environment interface definition
+     *
+     * @param[in] ConfigPtr         Pointer to driver configuration definition
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
 
-XilSdnetReturnType XilSdnetTargetInit(XilSdnetTargetCtx *CtxPtr, XilSdnetEnvIf *EnvIfPtr, XilSdnetTargetConfig *ConfigPtr);
+    XilSdnetReturnType XilSdnetTargetInit(XilSdnetTargetCtx *CtxPtr, XilSdnetEnvIf *EnvIfPtr, XilSdnetTargetConfig *ConfigPtr);
 
-/**
- * Destroy the SDNet Target driver instance.
- *
- * @param[in] CtxPtr            Pointer to the SDNet Target instance context.
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
+    /**
+     * Destroy the SDNet Target driver instance.
+     *
+     * @param[in] CtxPtr            Pointer to the SDNet Target instance context.
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
 
-XilSdnetReturnType XilSdnetTargetExit(XilSdnetTargetCtx *CtxPtr);
+    XilSdnetReturnType XilSdnetTargetExit(XilSdnetTargetCtx *CtxPtr);
 
-/****************************************************************************************************************************************************/
-/* SECTION: Table helper function prototypes */
-/****************************************************************************************************************************************************/
+    /****************************************************************************************************************************************************/
+    /* SECTION: Table helper function prototypes */
+    /****************************************************************************************************************************************************/
 
-/**
- * @addtogroup target_hlp  SDNet target: table helper API
- * @{
- * A collection of helper functions for managing the tables present in the target.
- */
+    /**
+     * @addtogroup target_hlp  SDNet target: table helper API
+     * @{
+     * A collection of helper functions for managing the tables present in the target.
+     */
 
-/**
- * Gets the context structure for the named table, if present in the target.
- *
- * @param[in] CtxPtr            Pointer to the SDNet Target instance context.
- *
- * @param[in] TableNamePtr      Pointer to string holding table name.
- *
- * @param[out] TableCtxPtrPtr   Pointer to a context structure for the table instance.
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
+    /**
+     * Gets the context structure for the named table, if present in the target.
+     *
+     * @param[in] CtxPtr            Pointer to the SDNet Target instance context.
+     *
+     * @param[in] TableNamePtr      Pointer to string holding table name.
+     *
+     * @param[out] TableCtxPtrPtr   Pointer to a context structure for the table instance.
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
 
-XilSdnetReturnType XilSdnetTargetGetTableByName(XilSdnetTargetCtx *CtxPtr, char *TableNamePtr, XilSdnetTableCtx **TableCtxPtrPtr);
+    XilSdnetReturnType XilSdnetTargetGetTableByName(XilSdnetTargetCtx *CtxPtr, char *TableNamePtr, XilSdnetTableCtx **TableCtxPtrPtr);
 
-/**
- * Gets the context structure for the indexed table, if present in the target.
- *
- * @param[in] CtxPtr            Pointer to the SDNet Target instance context.
- *
- * @param[in] Index             Integer specifying the table instance to be retrieved.
- *
- * @param[out] TableCtxPtrPtr   Pointer to a context structure for the table instance.
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
+    /**
+     * Gets the context structure for the indexed table, if present in the target.
+     *
+     * @param[in] CtxPtr            Pointer to the SDNet Target instance context.
+     *
+     * @param[in] Index             Integer specifying the table instance to be retrieved.
+     *
+     * @param[out] TableCtxPtrPtr   Pointer to a context structure for the table instance.
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
 
-XilSdnetReturnType XilSdnetTargetGetTableByIndex(XilSdnetTargetCtx *CtxPtr, uint32_t Index, XilSdnetTableCtx **TableCtxPtrPtr);
+    XilSdnetReturnType XilSdnetTargetGetTableByIndex(XilSdnetTargetCtx *CtxPtr, uint32_t Index, XilSdnetTableCtx **TableCtxPtrPtr);
 
-/**
- * Gets the number of tables present in the target.
- *
- * @param[in] CtxPtr            Pointer to the SDNet Target instance context.
- *
- * @param[out] NumTablesPtr     The number of tables present in the target.
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
+    /**
+     * Gets the number of tables present in the target.
+     *
+     * @param[in] CtxPtr            Pointer to the SDNet Target instance context.
+     *
+     * @param[out] NumTablesPtr     The number of tables present in the target.
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
 
-XilSdnetReturnType XilSdnetTargetGetTableCount(XilSdnetTargetCtx *CtxPtr, uint32_t *NumTablesPtr);
+    XilSdnetReturnType XilSdnetTargetGetTableCount(XilSdnetTargetCtx *CtxPtr, uint32_t *NumTablesPtr);
 
-/**
- * Gets the name of the table from its context structure
- *
- * @param[in] CtxPtr                Pointer to the SDNet Target instance context.
- *
- * @param[in] TableCtxPtr           Pointer to a table's context structure.
- *
- * @param[out] TableNamePtr         Pointer to char buffer to hold the table name.
- *
- * @param[in] TableNameNumBytes     The number of characters the table name buffer can hold including the null terminating character.
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
+    /**
+     * Gets the name of the table from its context structure
+     *
+     * @param[in] CtxPtr                Pointer to the SDNet Target instance context.
+     *
+     * @param[in] TableCtxPtr           Pointer to a table's context structure.
+     *
+     * @param[out] TableNamePtr         Pointer to char buffer to hold the table name.
+     *
+     * @param[in] TableNameNumBytes     The number of characters the table name buffer can hold including the null terminating character.
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
 
-XilSdnetReturnType XilSdnetTargetGetTableName(XilSdnetTargetCtx *CtxPtr,
-                                              XilSdnetTableCtx *TableCtxPtr,
-                                              char *TableNamePtr,
-                                              uint32_t TableNameNumBytes);
+    XilSdnetReturnType XilSdnetTargetGetTableName(XilSdnetTargetCtx *CtxPtr,
+                                                  XilSdnetTableCtx *TableCtxPtr,
+                                                  char *TableNamePtr,
+                                                  uint32_t TableNameNumBytes);
 
-/** @} */
+    /** @} */
 
 #ifdef __cplusplus
 }

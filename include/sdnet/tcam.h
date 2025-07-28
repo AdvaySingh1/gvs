@@ -60,7 +60,7 @@
 #ifndef _TCAM_H_
 #define _TCAM_H_
 
-#include "cam.h"
+#include "sdnet/cam.h"
 
 #ifdef __cplusplus
 extern "C" {

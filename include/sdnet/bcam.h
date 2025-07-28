@@ -58,7 +58,7 @@
 #ifndef _BCAM_H_
 #define _BCAM_H_
 
-#include "cam.h"
+#include "sdnet/cam.h"
 
 #ifdef __cplusplus
 extern "C" {

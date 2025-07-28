@@ -27,6 +27,7 @@
 // @NETFPGA_LICENSE_HEADER_END@
 
 // TODO add gigaflow offload vlogs for ovs-appctl
+#include <config.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/mman.h>

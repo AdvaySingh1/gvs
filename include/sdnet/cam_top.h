@@ -185,7 +185,7 @@
  *  - key[1] = CCh
  *  - key[2] = BBh
  *  - key[3] = AAh
-  *
+ *
  * <i> XIL_SDNET_BIG_ENDIAN </i>
  *  - key[0] = AAh
  *  - key[1] = BBh
@@ -230,10 +230,11 @@
 /* SECTION: Header includes */
 /****************************************************************************************************************************************************/
 
-#include "sdnet_common.h"
+#include "sdnet/sdnet_common.h"
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /****************************************************************************************************************************************************/
@@ -245,1038 +246,1037 @@ extern "C" {
  */
 #define XIL_SDNET_CAM_PRIORITY_SIZE_DEFAULT (0xFF)
 
-/****************************************************************************************************************************************************/
-/* SECTION: Type definitions */
-/****************************************************************************************************************************************************/
-
-/** Selects which type of FPGA memory resources are used to implement the CAM */
-typedef enum XilSdnetCamMemType
-{
-    XIL_SDNET_CAM_MEM_AUTO,     /**< Automatically selects between BRAM and URAM based on CAM size */
-    XIL_SDNET_CAM_MEM_BRAM,     /**< CAM storage uses BRAM  */
-    XIL_SDNET_CAM_MEM_URAM,     /**< CAM storage uses URAM  */
-    XIL_SDNET_CAM_MEM_HBM,      /**< CAM storage uses HBM (for use with BCAM only) */
-    XIL_SDNET_NUM_CAM_MEM_TYPE  /**< For validation by driver - do not use */
-} XilSdnetCamMemType;
-
-/** Populated by the user to define the CAM configuration */
-typedef struct XilSdnetCamConfig
-{
-    XilSdnetAddressType BaseAddr;           /**< Base address of the CAM */
-    char                *FormatStringPtr;   /**< Format string - refer to \ref fmt for details */
-    uint32_t            NumEntries;         /**< Number of entries the CAM holds */
-    float               RamFrequencyMhz;    /**< RAM clock frequency, specified in Megahertz */
-    float               LookupFrequencyMhz; /**< Lookup engine clock frequency, specified in Megahertz */
-    float               MlookupsPerSec;     /**< Number of lookups, specfied in millions per second */
-    uint16_t            ResponseSizeBits;   /**< Size of CAM response data, specified in bits */
-    uint8_t             PrioritySizeBits;   /**< Size of priority field, specified in bits (applies to TCAM only, also see \ref XIL_SDNET_CAM_PRIORITY_SIZE_DEFAULT) */
-    uint8_t             NumMasks;           /**< STCAM only: specifes the number of unique masks that are available */
-    XilSdnetEndian      Endian;             /**< Format of key, mask and response data byte arrays */
-    XilSdnetCamMemType  MemType;            /**< FPGA memory resource selection */
-} XilSdnetCamConfig;
-
-/** Forward declaration to support context structure declaration */
-typedef struct XilSdnetCamCtx XilSdnetCamCtx;
-
-/** Holds context information needed by the DCAM driver's API */
-typedef struct XilSdnetDcamCtx
-{
-    XilSdnetCamCtx *PrivateCtxPtr;  /**< Internal context data used by driver implementation */
-} XilSdnetDcamCtx;
-
-/** Holds context information needed by the BCAM driver's API */
-typedef struct XilSdnetBcamCtx
-{
-    XilSdnetCamCtx *PrivateCtxPtr;  /**< Internal context data used by driver implementation */
-} XilSdnetBcamCtx;
-
-/** Holds context information needed by the TCAM driver's API */
-typedef struct XilSdnetTcamCtx
-{
-    XilSdnetCamCtx *PrivateCtxPtr;  /**< Internal context data used by driver implementation */
-} XilSdnetTcamCtx;
-
-/** Holds context information needed by the STCAM driver's API */
-typedef struct XilSdnetStcamCtx
-{
-    XilSdnetCamCtx *PrivateCtxPtr;  /**< Internal context data used by driver implementation */
-} XilSdnetStcamCtx;
-
-/****************************************************************************************************************************************************/
-/* SECTION: Global function prototypes */
-/****************************************************************************************************************************************************/
-
-/**
- * @addtogroup sdnet_dcam SDNet DCAM public API
- * @{
- * Please refer to the following sections to understand key and response data layout:
- *  - \ref fmt
- *  - \ref endian
- */
-
-/**
- * Initialization function for the DCAM driver API
- *
- * @param[in,out] CtxPtr        Pointer to an uninitialized DCAM context structure instance.
- *                              Is populated by function execution.
- *
- * @param[in] EnvIfPtr          Pointer to environment interface definition
- *
- * @param[in] ConfigPtr         Pointer to driver configuration definition
- *
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetDcamInit(XilSdnetDcamCtx *CtxPtr, XilSdnetEnvIf *EnvIfPtr, XilSdnetCamConfig *ConfigPtr);
-
-/**
- * Resets a DCAM instance.
- *
- * All existing entries in the table (if any) are deleted
- *
- * @param[in]  CtxPtr           Pointer to the DCAM instance context
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetDcamReset(XilSdnetDcamCtx *CtxPtr);
-
-/**
- * Inserts an entry into the DCAM instance.
- *
- * If an existing matching entry is found, the function fails by returning error
- * code XIL_SDNET_CAM_ERR_DUPLICATE_FOUND. If an existing matching entry is not
- * found, then it is inserted in the DCAM instance.
- *
- * @param[in] CtxPtr        Pointer to the DCAM instance context
- *
- * @param[in] Key           Specifies location in the table of the entry to access
- *
- * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetDcamInsert(XilSdnetDcamCtx *CtxPtr, uint32_t Key, uint8_t *ResponsePtr);
-
-/**
- * Updates an entry in the DCAM instance.
- *
- * If the entry is found, the response is updated. If the entry is not found,
- * the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * @param[in] CtxPtr        Pointer to the DCAM instance context
- *
- * @param[in] Key           Specifies location in the table of the entry to access
- *
- * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetDcamUpdate(XilSdnetDcamCtx *CtxPtr, uint32_t Key, uint8_t *ResponsePtr);
-
-/**
- * Gets an entry from the DCAM instance with the matching response value.
- *
- * If the entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * The PositionPtr argument enables multiple matching entries to be found. The first time the function is
- * called the integer at PositionPtr should be set to zero. To find all entries matching the response, the function is
- * called multiple times, each call returns one matching entry.
- *
- * For every consecutive call the returned PositionPtr value must be used again as input argument.
- * When XIL_SDNET_CAM_ERR_KEY_NOT_FOUND is returned no more entries matching the response could be found.
- *
- * The ResponseMaskPtr is used to limit the search to subfields of the response. If the complete,
- * exact response value is searched, then all bits in the byte array at ResponseMaskPtr should be set to one.
- * By setting the bits to all zeros, any response value will match.
- * This can be used for getting all entries without prior knowledge of the response values.
- *
- * The function uses a linear search to read the entries from hardware.
- *
- * @param[in] CtxPtr            Pointer to the DCAM instance context
- *
- * @param[in] ResponsePtr       Pointer to byte array holding the response to search for
- *
- * @param[in] ResponseMaskPtr   The buffers pointed to by ResponsePtr and ResponseMaskPtr are ANDed and then
- *                              searched for. The stored response is also ANDed
- *                              with the ResponseMaskPtr before the comparison takes place.
- *
- * @param[in,out] PositionPtr   Position in the database. Used for
- *                              consecutive get operations, set to 0 for
- *                              first get.
- *
- * @param[out] KeyPtr           Pointer to integer which is updated with the location in the table of the
- *                              entry when matches are found
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetDcamGetByResponse(XilSdnetDcamCtx *CtxPtr,
-                                             uint8_t *ResponsePtr,
-                                             uint8_t *ResponseMaskPtr,
-                                             uint32_t *PositionPtr,
-                                             uint32_t *KeyPtr);
-
-/**
- * Looks up an entry in the DCAM instance.
- *
- * This function provides the same response as if a lookup had been performed in hardware.
- * If an entry is not found, the function returns XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * @param[in] CtxPtr        Pointer to the DCAM instance context
- *
- * @param[in] Key           Specifies location in the table of the entry to access
- *
- * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetDcamLookup(XilSdnetDcamCtx *CtxPtr, uint32_t Key, uint8_t *ResponsePtr);
-
-/**
- * Delete an entry with the specified key from the DCAM instance.
- *
- * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * @param[in] CtxPtr    Pointer to the DCAM instance context
- *
- * @param[in] Key       Specifies location in the table of the entry to access
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetDcamDelete(XilSdnetDcamCtx *CtxPtr, uint32_t Key);
-
-/**
- * Reads and clears the ECC counters of the DCAM instance.
- *
- * @param[in] CtxPtr                        Pointer to the DCAM instance context
- *
- * @param[out] CorrectedSingleBitErrorsPtr  The number of single bit errors the hardware scrubbing
- *                                          process has detected and corrected. Errors might
- *                                          have been detected by a hardware lookup and then corrected
- *                                          dynamically for the lookups, but still not counted.
- *                                          The scrubbing process runs in the background and corrects
- *                                          errors permanently. The counter is only incremented after
- *                                          the error is corrected permanently.
- *
- * @param[out] DetectedDoubleBitErrorsPtr   The number of detected double-bit errors. Double-bit
- *                                          errors are fatal errors and the data base is corrupt. The hardware
- *                                          cannot correct the error without help from software. The instance
- *                                          has generated an interrupt and this counter can be used to find
- *                                          the instance which caused the interrupt if multiple instances are
- *                                          in use. Lookups detecting double-bit errors will not discard the lookup,
- *                                          the lookup result might be corrupt. Once the double-bit error is
- *                                          detected the interrupt pin is asserted and it is advised to use this
- *                                          signal to discard packets until the data base is corrected.
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetDcamGetEccCountersClearOnRead(XilSdnetDcamCtx *CtxPtr,
-                                                         uint32_t *CorrectedSingleBitErrorsPtr,
-                                                         uint32_t *DetectedDoubleBitErrorsPtr);
-
-/**
- * Reads and clears the ECC adress registers of the DCAM instance.
- *
- * @param[in] CtxPtr                            Pointer to the DCAM instance context
- *
- * @param[out] FailingAddressSingleBitErrorPtr  The address of the first single bit error detected and corrected
- *                                              by the hardware scrubbing process. Additional errors might
- *                                              have been detected during a hardware lookup and then corrected
- *                                              dynamically, but this register only reflects the
- *                                              errors detected by hardware scrubbing.
- *
- * @param[out] FailingAddressDoubleBitErrorPtr The address of the first double-bit error detected by the
- *                                              hardware scrubbing process.
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-XilSdnetReturnType XilSdnetDcamGetEccAddressesClearOnRead(XilSdnetDcamCtx *CtxPtr,
-                                                          uint32_t *FailingAddressSingleBitErrorPtr,
-                                                          uint32_t *FailingAddressDoubleBitErrorPtr);
-
-/**
- * Destroy the DCAM instance
- *
- * All memory allocated by \ref XilSdnetDcamInit is released.
- *
- * @param[in] CtxPtr    Pointer to the DCAM instance context
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetDcamExit(XilSdnetDcamCtx *CtxPtr);
-
-/** @} */
-
-/**
- * @addtogroup sdnet_bcam SDNet BCAM public API
- * @{
- * Please refer to the following sections to understand key and response data layout:
- *  - \ref fmt
- *  - \ref endian
- */
-
-/**
- * Initialization function for the BCAM driver API
- *
- * @param[in,out] CtxPtr        Pointer to an uninitialized BCAM context structure instance.
- *                              Is populated by function execution.
- *
- * @param[in] EnvIfPtr          Pointer to environment interface definition
- *
- * @param[in] ConfigPtr         Pointer to driver configuration definition
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetBcamInit(XilSdnetBcamCtx *CtxPtr, XilSdnetEnvIf *EnvIfPtr, XilSdnetCamConfig *ConfigPtr);
-
-/**
- * Resets a BCAM instance.
- *
- * All existing entries in the table (if any) are deleted.
- *
- * @param[in]  CtxPtr           Pointer to the BCAM instance context
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetBcamReset(XilSdnetBcamCtx *CtxPtr);
-
-/**
- * Inserts an entry into the BCAM instance.
- *
- * If an existing matching entry is found, the function fails by returning error
- * code XIL_SDNET_CAM_ERR_DUPLICATE_FOUND. If an existing matching entry is not
- * found, then it is inserted in the BCAM instance.
- *
- * @param[in] CtxPtr        Pointer to the BCAM instance context
- *
- * @param[in] KeyPtr        Pointer to byte array holding the key for the entry
- *
- * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetBcamInsert(XilSdnetBcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *ResponsePtr);
-
-/**
- * Updates an entry in the BCAM instance.
- *
- * If the entry is found, the response is updated. If the entry is not found,
- * the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * @param[in] CtxPtr        Pointer to the BCAM instance context
- *
- * @param[in] KeyPtr        Pointer to byte array holding the key for the entry
- *
- * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetBcamUpdate(XilSdnetBcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *ResponsePtr);
-
-/**
- * Gets an entry from the BCAM instance with the matching response value.
- *
- * If the entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * The PositionPtr argument enables multiple matching entries to be found. The first time the function is
- * called the integer at PositionPtr should be set to zero. To find all entries matching the response, the function is
- * called multiple times, each call returns one matching entry.
- *
- * For every consecutive call the returned PositionPtr value must be used again as input argument.
- * When XIL_SDNET_CAM_ERR_KEY_NOT_FOUND is returned no more entries matching the response could be found.
- *
- * The ResponseMaskPtr is used to limit the search to subfields of the response. If the complete,
- * exact response value is searched, then all bits in the byte array at ResponseMaskPtr should be set to one.
- * By setting the bits to all zeros, any response value will match.
- * This can be used for getting all entries without prior knowledge of the response values.
- *
- * The function does not read from the hardware, it reads from the shadow copy in system memory.
- * The function uses a linear search.
- *
- * @param[in] CtxPtr            Pointer to the BCAM instance context
- *
- * @param[in] ResponsePtr       Pointer to byte array holding the response to search for
- *
- * @param[in] ResponseMaskPtr   The buffers pointed to by ResponsePtr and ResponseMaskPtr are ANDed and then
- *                              searched for. The stored response is also ANDed
- *                              with the ResponseMaskPtr before compare takes place.
- *
- * @param[in,out] PositionPtr   Position in the database. Used for
- *                              consecutive get operations, set to 0 for
- *                              first get.
- *
- * @param[out] KeyPtr           Pointer to byte array with storage for the key that is read
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetBcamGetByResponse(XilSdnetBcamCtx *CtxPtr,
-                                             uint8_t *ResponsePtr,
-                                             uint8_t *ResponseMaskPtr,
-                                             uint32_t *PositionPtr,
-                                             uint8_t *KeyPtr);
-
-/**
- * Gets an entry from the BCAM instance with the specified key
-
- * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- * The function does not read from the hardware, it reads from the shadow copy in system memory.
- * The function uses a hash table and is fast.
- *
- * @param[in] CtxPtr        Pointer to the BCAM instance context
- *
- * @param[in] KeyPtr        Pointer to byte array holding the key to search for
- *
- * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetBcamGetByKey(XilSdnetBcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *ResponsePtr);
-
-/**
- * Looks up an entry in the BCAM instance.
- *
- * This function provides the same response as if a lookup had been performed in hardware.
- * If an entry is not found, the function returns XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * @param[in] CtxPtr        Pointer to the BCAM instance context
- *
- * @param[in] KeyPtr        Pointer to byte array holding the key to lookup
- *
- * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetBcamLookup(XilSdnetBcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *ResponsePtr);
-
-/**
- * Delete an entry with the specified key from the BCAM instance.
- *
- * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * @param[in] CtxPtr    Pointer to the BCAM instance context
- *
- * @param[in] KeyPtr    Pointer to byte array holding the key to be deleted
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetBcamDelete(XilSdnetBcamCtx *CtxPtr, uint8_t *KeyPtr);
-
-/**
- * Reads and clears the ECC counters of the BCAM instance.
- *
- * @param[in] CtxPtr                        Pointer to the BCAM instance context
- *
- * @param[out] CorrectedSingleBitErrorsPtr  The number of single bit errors the hardware scrubbing
- *                                          process has detected and corrected. Errors might
- *                                          have been detected by a hardware lookup and then corrected
- *                                          dynamically for the lookups, but still not counted.
- *                                          The scrubbing process runs in the background and corrects
- *                                          errors permanently. The counter is only incremented after
- *                                          the error is corrected permanently.
- *
- * @param[out] DetectedDoubleBitErrorsPtr   The number of detected double-bit errors. Double-bit
- *                                          errors are fatal errors and the data base is corrupt. The hardware
- *                                          cannot correct the error without help from software. The instance
- *                                          has generated an interrupt and this counter can be used to find
- *                                          the instance which caused the interrupt if multiple instances are
- *                                          in use. Lookups detecting double-bit errors will not discard the lookup,
- *                                          the lookup result might be corrupt. Once the double-bit error is
- *                                          detected the interrupt pin is asserted and it is advised to use this
- *                                          signal to discard packets until the data base is corrected.
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetBcamGetEccCountersClearOnRead(XilSdnetBcamCtx *CtxPtr,
-                                                         uint32_t *CorrectedSingleBitErrorsPtr,
-                                                         uint32_t *DetectedDoubleBitErrorsPtr);
-
-/**
- * Reads and clears the ECC adress registers of the BCAM instance.
- *
- * @param[in] CtxPtr                            Pointer to the BCAM instance context
- *
- * @param[out] FailingAddressSingleBitErrorPtr  The address of the first single bit error detected and corrected
- *                                              by the hardware scrubbing process. Additional errors might
- *                                              have been detected during a hardware lookup and then corrected
- *                                              dynamically, but this register only reflects the
- *                                              errors detected by hardware scrubbing.
- *
- * @param[out] FailingAddressDoubleBitErrorPtr The address of the first double-bit error detected by the
- *                                              hardware scrubbing process.
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-XilSdnetReturnType XilSdnetBcamGetEccAddressesClearOnRead(XilSdnetBcamCtx *CtxPtr,
-                                                          uint32_t *FailingAddressSingleBitErrorPtr,
-                                                          uint32_t *FailingAddressDoubleBitErrorPtr);
-
-/**
- * Rewrite all BCAM memory contents to recover from ECC double-bit error
- *
- * @param[in] CtxPtr Pointer to the BCAM instance context
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetBcamRewrite(XilSdnetBcamCtx *CtxPtr);
-
-/**
- * Destroy the BCAM instance
- *
- * All memory allocated by \ref XilSdnetBcamInit is released.
- *
- * @param[in] CtxPtr    Pointer to the BCAM instance context
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetBcamExit(XilSdnetBcamCtx *CtxPtr);
-
-/** @} */
-
-/**
- * @addtogroup sdnet_tcam SDNet TCAM public API
- * @{
- * Please refer to the following sections to understand key, mask and response data layout:
- *  - \ref fmt
- *  - \ref endian
- */
-
-/**
- * Initialization function for the TCAM driver API
- *
- * @param[in,out] CtxPtr        Pointer to an uninitialized TCAM context structure instance.
- *                              Is populated by function execution.
- *
- * @param[in] EnvIfPtr          Pointer to environment interface definition
- *
- * @param[in] ConfigPtr         Pointer to driver configuration definition
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetTcamInit(XilSdnetTcamCtx *CtxPtr, XilSdnetEnvIf *EnvIfPtr, XilSdnetCamConfig *ConfigPtr);
-
-
-/**
- * Resets a TCAM instance.
- *
- * All existing entries in the table (if any) are deleted
- *
- * @param[in]  CtxPtr           Pointer to the TCAM instance context
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetTcamReset(XilSdnetTcamCtx *CtxPtr);
-
-/**
- * Inserts an entry into the TCAM instance.
- *
- * If an existing matching entry is found, the function fails by returning error
- * code XIL_SDNET_CAM_ERR_DUPLICATE_FOUND. If an existing matching entry is not
- * found, then it is inserted in the TCAM instance.
- *
- * @param[in] CtxPtr        Pointer to the TCAM instance context
- *
- * @param[in] KeyPtr        Pointer to byte array holding the key for the entry
- *
- * @param[in] MaskPtr       Pointer to byte array holding the mask for the entry
- *
- * @param[in] Priority      The priority of the entry. If multiple matches occur, the winning matching
- *                          entry is determined based on the priority value. The entry with the lowest priority
- *                          wins. If there are multiple matches with the same lowest priority, any of them becomes
- *                          the winner.
- *
- * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetTcamInsert(XilSdnetTcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr, uint32_t Priority, uint8_t *ResponsePtr);
-
-/**
- * Updates an entry in the TCAM instance.
- *
- * If the entry is found, the response is updated. If the entry is not found,
- * the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * @param[in] CtxPtr        Pointer to the TCAM instance context
- *
- * @param[in] KeyPtr        Pointer to byte array holding the key for the entry
- *
- * @param[in] MaskPtr       Pointer to byte array holding the mask for the entry
- *
- * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetTcamUpdate(XilSdnetTcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr, uint8_t *ResponsePtr);
-
-/**
- * Gets an entry from the TCAM instance with the matching response value.
- *
- * If the entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * The PositionPtr argument enables multiple matching entries to be found. The first time the function is
- * called the integer at PositionPtr should be set to zero. To find all entries matching the response, the function is
- * called multiple times, each call returns one matching entry.
- *
- * For every consecutive call the returned PositionPtr value must be used again as input argument.
- * When XIL_SDNET_CAM_ERR_KEY_NOT_FOUND is returned no more entries matching the response could be found.
- *
- * The ResponseMaskPtr is used to limit the search to subfields of the response. If the complete,
- * exact response value is searched, then all bits in the byte array at ResponseMaskPtr should be set to one.
- * By setting the bits to all zeros, any response value will match.
- * This can be used for getting all entries without prior knowledge of the response values.
- *
- * The function does not read from the hardware, it reads from the shadow copy in system memory.
- * The function uses a linear search.
- *
- * @param[in] CtxPtr            Pointer to the TCAM instance context
- *
- * @param[in] ResponsePtr       Pointer to byte array holding the response to search for
- *
- * @param[in] ResponseMaskPtr   The buffers pointed to by ResponsePtr and ResponseMaskPtr are ANDed and then
- *                              searched for. The stored response is also ANDed
- *                              with the ResponseMaskPtr before compare takes place.
- *
- * @param[in,out] PositionPtr   Position in the database. Used for
- *                              consecutive get operations, set to 0 for
- *                              first get.
- *
- * @param[out] KeyPtr           Pointer to byte array with storage for the key that is read
- *
- * @param[out] MaskPtr          Pointer to byte array with storage for the mask that is read
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetTcamGetByResponse(XilSdnetTcamCtx *CtxPtr,
-                                             uint8_t *ResponsePtr,
-                                             uint8_t *ResponseMaskPtr,
-                                             uint32_t *PositionPtr,
-                                             uint8_t *KeyPtr,
-                                             uint8_t *MaskPtr);
-
-/**
- * Gets an entry from the TCAM instance with the specified key
-
- * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- * The function does not read from the hardware, it reads from the shadow copy in system memory.
- * The function uses a hash table and is fast.
- *
- * @param[in] CtxPtr        Pointer to the TCAM instance context
- *
- * @param[in] KeyPtr        Pointer to byte array holding the key to search for
- *
- * @param[in] MaskPtr       Pointer to byte array holding the mask to search for
- *
- * @param[out] PriorityPtr  Pointer to integer with storage for the priority of the entry that is read
- *
- * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetTcamGetByKey(XilSdnetTcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr, uint32_t *PriorityPtr, uint8_t *ResponsePtr);
-
-/**
- * Looks up an entry in the TCAM instance.
- *
- * This function provides the same response as if a lookup had been performed in hardware.
- * If an entry is not found, the function returns XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * @param[in] CtxPtr        Pointer to the TCAM instance context
- *
- * @param[in] KeyPtr        Pointer to byte array holding the key to lookup
- *
- * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetTcamLookup(XilSdnetTcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *ResponsePtr);
-
-/**
- * Delete an entry with the specified key from the TCAM instance.
- *
- * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * @param[in] CtxPtr    Pointer to the TCAM instance context
- *
- * @param[in] KeyPtr    Pointer to byte array holding the key to be deleted
- *
- * @param[in] MaskPtr   Pointer to byte array holding the mask to be deleted
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetTcamDelete(XilSdnetTcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr);
-
-/**
- * Reads and clears the ECC counters of the TCAM instance.
- *
- * @param[in] CtxPtr                        Pointer to the TCAM instance context
- *
- * @param[out] CorrectedSingleBitErrorsPtr  The number of single bit errors the hardware scrubbing
- *                                          process has detected and corrected. Errors might
- *                                          have been detected by a hardware lookup and then corrected
- *                                          dynamically for the lookups, but still not counted.
- *                                          The scrubbing process runs in the background and corrects
- *                                          errors permanently. The counter is only incremented after
- *                                          the error is corrected permanently.
- *
- * @param[out] DetectedDoubleBitErrorsPtr   The number of detected double-bit errors. Double-bit
- *                                          errors are fatal errors and the data base is corrupt. The hardware
- *                                          cannot correct the error without help from software. The instance
- *                                          has generated an interrupt and this counter can be used to find
- *                                          the instance which caused the interrupt if multiple instances are
- *                                          in use. Lookups detecting double-bit errors will not discard the lookup,
- *                                          the lookup result might be corrupt. Once the double-bit error is
- *                                          detected the interrupt pin is asserted and it is advised to use this
- *                                          signal to discard packets until the data base is corrected.
- */
-
-XilSdnetReturnType XilSdnetTcamGetEccCountersClearOnRead(XilSdnetTcamCtx *CtxPtr,
-                                                         uint32_t *CorrectedSingleBitErrorsPtr,
-                                                         uint32_t *DetectedDoubleBitErrorsPtr);
-
-/**
- * Reads and clears the ECC adress registers of the TCAM instance.
- *
- * @param[in] CtxPtr                            Pointer to the TCAM instance context
- *
- * @param[out] FailingAddressSingleBitErrorPtr  The address of the first single bit error detected and corrected
- *                                              by the hardware scrubbing process. Additional errors might
- *                                              have been detected during a hardware lookup and then corrected
- *                                              dynamically, but this register only reflects the
- *                                              errors detected by hardware scrubbing.
- *
- * @param[out] FailingAddressDoubleBitErrorPtr The address of the first double-bit error detected by the
- *                                              hardware scrubbing process.
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-XilSdnetReturnType XilSdnetTcamGetEccAddressesClearOnRead(XilSdnetTcamCtx *CtxPtr,
-                                                          uint32_t *FailingAddressSingleBitErrorPtr,
-                                                          uint32_t *FailingAddressDoubleBitErrorPtr);
-
-/**
- * Rewrite all TCAM memory contents to recover from ECC double-bit error
- *
- * @param[in] CtxPtr Pointer to the TCAM instance context
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetTcamRewrite(XilSdnetTcamCtx *CtxPtr);
-
-/**
- * Destroy the TCAM instance
- *
- * All memory allocated by \ref XilSdnetTcamInit is released.
- *
- * @param[in] CtxPtr    Pointer to the TCAM instance context
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetTcamExit(XilSdnetTcamCtx *CtxPtr);
-
-/** @} */
-
-/**
- * @addtogroup sdnet_stcam SDNet STCAM public API
- * @{
- * Please refer to the following sections to understand key, mask and response data layout:
- *  - \ref fmt
- *  - \ref endian
- */
-
-/**
- * Initialization function for the STCAM driver API
- *
- * @param[in,out] CtxPtr        Pointer to an uninitialized STCAM context structure instance.
- *                              Is populated by function execution.
- *
- * @param[in] EnvIfPtr          Pointer to environment interface definition
- *
- * @param[in] ConfigPtr         Pointer to driver configuration definition
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetStcamInit(XilSdnetStcamCtx *CtxPtr, XilSdnetEnvIf *EnvIfPtr, XilSdnetCamConfig *ConfigPtr);
-
-/**
- * Resets a STCAM instance.
- *
- * All existing entries in the table (if any) are deleted
- *
- * @param[in]  CtxPtr           Pointer to the STCAM instance context
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetStcamReset(XilSdnetStcamCtx *CtxPtr);
-
-/**
- * Inserts an entry into the STCAM instance.
- *
- * If an existing matching entry is found, the function fails by returning error
- * code XIL_SDNET_CAM_ERR_DUPLICATE_FOUND. If an existing matching entry is not
- * found, then it is inserted in the STCAM instance.
- *
- * @param[in] CtxPtr        Pointer to the STCAM instance context
- *
- * @param[in] KeyPtr        Pointer to byte array holding the key for the entry
- *
- * @param[in] MaskPtr       Pointer to byte array holding the mask for the entry
- *
- * @param[in] Priority      The priority of the entry. If multiple matches occur, the winning matching
- *                          entry is determined based on the priority value. The entry with the lowest priority
- *                          wins. If there are multiple matches with the same lowest priority, any of them becomes
- *                          the winner.
- *
- * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetStcamInsert(XilSdnetStcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr, uint32_t Priority, uint8_t *ResponsePtr);
-
-/**
- * Updates an entry in the STCAM instance.
- *
- * If the entry is found, the response is updated. If the entry is not found,
- * the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * @param[in] CtxPtr        Pointer to the STCAM instance context
- *
- * @param[in] KeyPtr        Pointer to byte array holding the key for the entry
- *
- * @param[in] MaskPtr       Pointer to byte array holding the mask for the entry
- *
- * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetStcamUpdate(XilSdnetStcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr, uint8_t *ResponsePtr);
-
-/**
- * Gets an entry from the STCAM instance with the matching response value.
- *
- * If the entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * The PositionPtr argument enables multiple matching entries to be found. The first time the function is
- * called the integer at PositionPtr should be set to zero. To find all entries matching the response, the function is
- * called multiple times, each call returns one matching entry.
- *
- * For every consecutive call the returned PositionPtr value must be used again as input argument.
- * When XIL_SDNET_CAM_ERR_KEY_NOT_FOUND is returned no more entries matching the response could be found.
- *
- * The ResponseMaskPtr is used to limit the search to subfields of the response. If the complete,
- * exact response value is searched, then all bits in the byte array at ResponseMaskPtr should be set to one.
- * By setting the bits to all zeros, any response value will match.
- * This can be used for getting all entries without prior knowledge of the response values.
- *
- * The function does not read from the hardware, it reads from the shadow copy in system memory.
- * The function uses a linear search.
- *
- * @param[in] CtxPtr            Pointer to the STCAM instance context
- *
- * @param[in] ResponsePtr       Pointer to byte array holding the response to search for
- *
- * @param[in] ResponseMaskPtr   The buffers pointed to by ResponsePtr and ResponseMaskPtr are ANDed and then
- *                              searched for. The stored response is also ANDed
- *                              with the ResponseMaskPtr before compare takes place.
- *
- * @param[in,out] PositionPtr   Position in the database. Used for
- *                              consecutive get operations, set to 0 for
- *                              first get.
- *
- * @param[out] KeyPtr           Pointer to byte array with storage for the key that is read
- *
- * @param[out] MaskPtr          Pointer to byte array with storage for the mask that is read
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetStcamGetByResponse(XilSdnetStcamCtx *CtxPtr,
-                                              uint8_t *ResponsePtr,
-                                              uint8_t *ResponseMaskPtr,
-                                              uint32_t *PositionPtr,
-                                              uint8_t *KeyPtr,
-                                              uint8_t *MaskPtr);
-
-/**
- * Gets an entry from the STCAM instance with the specified key
-
- * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- * The function does not read from the hardware, it reads from the shadow copy in system memory.
- * The function uses a hash table and is fast.
- *
- * @param[in] CtxPtr        Pointer to the STCAM instance context
- *
- * @param[in] KeyPtr        Pointer to byte array holding the key to search for
- *
- * @param[in] MaskPtr       Pointer to byte array holding the mask to search for
- *
- ** @param[out] PriorityPtr Pointer to integer with storage for the priority of the entry that is read
- *
- * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetStcamGetByKey(XilSdnetStcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr, uint32_t *PriorityPtr, uint8_t *ResponsePtr);
-
-/**
- * Looks up an entry in the STCAM instance.
- *
- * This function provides the same response as if a lookup had been performed in hardware.
- * If an entry is not found, the function returns XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * @param[in] CtxPtr        Pointer to the STCAM instance context
- *
- * @param[in] KeyPtr        Pointer to byte array holding the key to lookup
- *
- * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetStcamLookup(XilSdnetStcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *ResponsePtr);
-
-/**
- * Delete an entry with the specified key from the STCAM instance.
- *
- * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
- *
- * @param[in] CtxPtr    Pointer to the STCAM instance context
- *
- * @param[in] KeyPtr    Pointer to byte array holding the key to be deleted
- *
- * @param[in] MaskPtr   Pointer to byte array holding the mask to be deleted
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetStcamDelete(XilSdnetStcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr);
-
-/**
- * Reads and clears the ECC counters of the STCAM instance.
- *
- * @param[in] CtxPtr                        Pointer to the STCAM instance context
- *
- * @param[out] CorrectedSingleBitErrorsPtr  The number of single bit errors the hardware scrubbing
- *                                          process has detected and corrected. Errors might
- *                                          have been detected by a hardware lookup and then corrected
- *                                          dynamically for the lookups, but still not counted.
- *                                          The scrubbing process runs in the background and corrects
- *                                          errors permanently. The counter is only incremented after
- *                                          the error is corrected permanently.
- *
- * @param[out] DetectedDoubleBitErrorsPtr   The number of detected double-bit errors. Double-bit
- *                                          errors are fatal errors and the data base is corrupt. The hardware
- *                                          cannot correct the error without help from software. The instance
- *                                          has generated an interrupt and this counter can be used to find
- *                                          the instance which caused the interrupt if multiple instances are
- *                                          in use. Lookups detecting double-bit errors will not discard the lookup,
- *                                          the lookup result might be corrupt. Once the double-bit error is
- *                                          detected the interrupt pin is asserted and it is advised to use this
- *                                          signal to discard packets until the data base is corrected.
- */
-
-XilSdnetReturnType XilSdnetStcamGetEccCountersClearOnRead(XilSdnetStcamCtx *CtxPtr,
-                                                          uint32_t *CorrectedSingleBitErrorsPtr,
-                                                          uint32_t *DetectedDoubleBitErrorsPtr);
-
-/**
- * Reads and clears the ECC adress registers of the STCAM instance.
- *
- * @param[in] CtxPtr                            Pointer to the STCAM instance context
- *
- * @param[out] FailingAddressSingleBitErrorPtr  The address of the first single bit error detected and corrected
- *                                              by the hardware scrubbing process. Additional errors might
- *                                              have been detected during a hardware lookup and then corrected
- *                                              dynamically, but this register only reflects the
- *                                              errors detected by hardware scrubbing.
- *
- * @param[out] FailingAddressDoubleBitErrorPtr The address of the first double-bit error detected by the
- *                                              hardware scrubbing process.
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-XilSdnetReturnType XilSdnetStcamGetEccAddressesClearOnRead(XilSdnetStcamCtx *CtxPtr,
-                                                          uint32_t *FailingAddressSingleBitErrorPtr,
-                                                          uint32_t *FailingAddressDoubleBitErrorPtr);
-
-/**
- * Rewrite all STCAM memory contents to recover from ECC double-bit error
- *
- * @param[in] CtxPtr Pointer to the TCAM instance context
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetStcamRewrite(XilSdnetStcamCtx *CtxPtr);
-
-/**
- * Destroy the STCAM instance
- *
- * All memory allocated by \ref XilSdnetStcamInit is released.
- *
- * @param[in] CtxPtr    Pointer to the STCAM instance context
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetStcamExit(XilSdnetStcamCtx *CtxPtr);
-
-/** @} */
-
-/**
- * @addtogroup sdnet_cam_util SDNet CAM utilities
- * @{
- * A collection of helper functions for use with the SDNET CAM API.
- */
-
-/**
- * Please refer to the following sections to understand key, mask and response data layout:
- *  - \ref fmt
- *
- * Function that uses the Key and mask format information from FormatStringPtr to calculate the Key width in bits.
- *
- * @param[in] FormatStringPtr   Pointer to the STCAM instance context
- *
- * @param[out] KeyLengthPtr     Pointer to byte array with storage for the response that is read
- *
- * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
- */
-
-XilSdnetReturnType XilSdnetCamGetKeyLengthInBits(char *FormatStringPtr, uint32_t *KeyLengthPtr);
-/** @} */
+    /****************************************************************************************************************************************************/
+    /* SECTION: Type definitions */
+    /****************************************************************************************************************************************************/
+
+    /** Selects which type of FPGA memory resources are used to implement the CAM */
+    typedef enum XilSdnetCamMemType
+    {
+        XIL_SDNET_CAM_MEM_AUTO,    /**< Automatically selects between BRAM and URAM based on CAM size */
+        XIL_SDNET_CAM_MEM_BRAM,    /**< CAM storage uses BRAM  */
+        XIL_SDNET_CAM_MEM_URAM,    /**< CAM storage uses URAM  */
+        XIL_SDNET_CAM_MEM_HBM,     /**< CAM storage uses HBM (for use with BCAM only) */
+        XIL_SDNET_NUM_CAM_MEM_TYPE /**< For validation by driver - do not use */
+    } XilSdnetCamMemType;
+
+    /** Populated by the user to define the CAM configuration */
+    typedef struct XilSdnetCamConfig
+    {
+        XilSdnetAddressType BaseAddr; /**< Base address of the CAM */
+        char *FormatStringPtr;        /**< Format string - refer to \ref fmt for details */
+        uint32_t NumEntries;          /**< Number of entries the CAM holds */
+        float RamFrequencyMhz;        /**< RAM clock frequency, specified in Megahertz */
+        float LookupFrequencyMhz;     /**< Lookup engine clock frequency, specified in Megahertz */
+        float MlookupsPerSec;         /**< Number of lookups, specfied in millions per second */
+        uint16_t ResponseSizeBits;    /**< Size of CAM response data, specified in bits */
+        uint8_t PrioritySizeBits;     /**< Size of priority field, specified in bits (applies to TCAM only, also see \ref XIL_SDNET_CAM_PRIORITY_SIZE_DEFAULT) */
+        uint8_t NumMasks;             /**< STCAM only: specifes the number of unique masks that are available */
+        XilSdnetEndian Endian;        /**< Format of key, mask and response data byte arrays */
+        XilSdnetCamMemType MemType;   /**< FPGA memory resource selection */
+    } XilSdnetCamConfig;
+
+    /** Forward declaration to support context structure declaration */
+    typedef struct XilSdnetCamCtx XilSdnetCamCtx;
+
+    /** Holds context information needed by the DCAM driver's API */
+    typedef struct XilSdnetDcamCtx
+    {
+        XilSdnetCamCtx *PrivateCtxPtr; /**< Internal context data used by driver implementation */
+    } XilSdnetDcamCtx;
+
+    /** Holds context information needed by the BCAM driver's API */
+    typedef struct XilSdnetBcamCtx
+    {
+        XilSdnetCamCtx *PrivateCtxPtr; /**< Internal context data used by driver implementation */
+    } XilSdnetBcamCtx;
+
+    /** Holds context information needed by the TCAM driver's API */
+    typedef struct XilSdnetTcamCtx
+    {
+        XilSdnetCamCtx *PrivateCtxPtr; /**< Internal context data used by driver implementation */
+    } XilSdnetTcamCtx;
+
+    /** Holds context information needed by the STCAM driver's API */
+    typedef struct XilSdnetStcamCtx
+    {
+        XilSdnetCamCtx *PrivateCtxPtr; /**< Internal context data used by driver implementation */
+    } XilSdnetStcamCtx;
+
+    /****************************************************************************************************************************************************/
+    /* SECTION: Global function prototypes */
+    /****************************************************************************************************************************************************/
+
+    /**
+     * @addtogroup sdnet_dcam SDNet DCAM public API
+     * @{
+     * Please refer to the following sections to understand key and response data layout:
+     *  - \ref fmt
+     *  - \ref endian
+     */
+
+    /**
+     * Initialization function for the DCAM driver API
+     *
+     * @param[in,out] CtxPtr        Pointer to an uninitialized DCAM context structure instance.
+     *                              Is populated by function execution.
+     *
+     * @param[in] EnvIfPtr          Pointer to environment interface definition
+     *
+     * @param[in] ConfigPtr         Pointer to driver configuration definition
+     *
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetDcamInit(XilSdnetDcamCtx *CtxPtr, XilSdnetEnvIf *EnvIfPtr, XilSdnetCamConfig *ConfigPtr);
+
+    /**
+     * Resets a DCAM instance.
+     *
+     * All existing entries in the table (if any) are deleted
+     *
+     * @param[in]  CtxPtr           Pointer to the DCAM instance context
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetDcamReset(XilSdnetDcamCtx *CtxPtr);
+
+    /**
+     * Inserts an entry into the DCAM instance.
+     *
+     * If an existing matching entry is found, the function fails by returning error
+     * code XIL_SDNET_CAM_ERR_DUPLICATE_FOUND. If an existing matching entry is not
+     * found, then it is inserted in the DCAM instance.
+     *
+     * @param[in] CtxPtr        Pointer to the DCAM instance context
+     *
+     * @param[in] Key           Specifies location in the table of the entry to access
+     *
+     * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetDcamInsert(XilSdnetDcamCtx *CtxPtr, uint32_t Key, uint8_t *ResponsePtr);
+
+    /**
+     * Updates an entry in the DCAM instance.
+     *
+     * If the entry is found, the response is updated. If the entry is not found,
+     * the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * @param[in] CtxPtr        Pointer to the DCAM instance context
+     *
+     * @param[in] Key           Specifies location in the table of the entry to access
+     *
+     * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetDcamUpdate(XilSdnetDcamCtx *CtxPtr, uint32_t Key, uint8_t *ResponsePtr);
+
+    /**
+     * Gets an entry from the DCAM instance with the matching response value.
+     *
+     * If the entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * The PositionPtr argument enables multiple matching entries to be found. The first time the function is
+     * called the integer at PositionPtr should be set to zero. To find all entries matching the response, the function is
+     * called multiple times, each call returns one matching entry.
+     *
+     * For every consecutive call the returned PositionPtr value must be used again as input argument.
+     * When XIL_SDNET_CAM_ERR_KEY_NOT_FOUND is returned no more entries matching the response could be found.
+     *
+     * The ResponseMaskPtr is used to limit the search to subfields of the response. If the complete,
+     * exact response value is searched, then all bits in the byte array at ResponseMaskPtr should be set to one.
+     * By setting the bits to all zeros, any response value will match.
+     * This can be used for getting all entries without prior knowledge of the response values.
+     *
+     * The function uses a linear search to read the entries from hardware.
+     *
+     * @param[in] CtxPtr            Pointer to the DCAM instance context
+     *
+     * @param[in] ResponsePtr       Pointer to byte array holding the response to search for
+     *
+     * @param[in] ResponseMaskPtr   The buffers pointed to by ResponsePtr and ResponseMaskPtr are ANDed and then
+     *                              searched for. The stored response is also ANDed
+     *                              with the ResponseMaskPtr before the comparison takes place.
+     *
+     * @param[in,out] PositionPtr   Position in the database. Used for
+     *                              consecutive get operations, set to 0 for
+     *                              first get.
+     *
+     * @param[out] KeyPtr           Pointer to integer which is updated with the location in the table of the
+     *                              entry when matches are found
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetDcamGetByResponse(XilSdnetDcamCtx *CtxPtr,
+                                                 uint8_t *ResponsePtr,
+                                                 uint8_t *ResponseMaskPtr,
+                                                 uint32_t *PositionPtr,
+                                                 uint32_t *KeyPtr);
+
+    /**
+     * Looks up an entry in the DCAM instance.
+     *
+     * This function provides the same response as if a lookup had been performed in hardware.
+     * If an entry is not found, the function returns XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * @param[in] CtxPtr        Pointer to the DCAM instance context
+     *
+     * @param[in] Key           Specifies location in the table of the entry to access
+     *
+     * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetDcamLookup(XilSdnetDcamCtx *CtxPtr, uint32_t Key, uint8_t *ResponsePtr);
+
+    /**
+     * Delete an entry with the specified key from the DCAM instance.
+     *
+     * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * @param[in] CtxPtr    Pointer to the DCAM instance context
+     *
+     * @param[in] Key       Specifies location in the table of the entry to access
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetDcamDelete(XilSdnetDcamCtx *CtxPtr, uint32_t Key);
+
+    /**
+     * Reads and clears the ECC counters of the DCAM instance.
+     *
+     * @param[in] CtxPtr                        Pointer to the DCAM instance context
+     *
+     * @param[out] CorrectedSingleBitErrorsPtr  The number of single bit errors the hardware scrubbing
+     *                                          process has detected and corrected. Errors might
+     *                                          have been detected by a hardware lookup and then corrected
+     *                                          dynamically for the lookups, but still not counted.
+     *                                          The scrubbing process runs in the background and corrects
+     *                                          errors permanently. The counter is only incremented after
+     *                                          the error is corrected permanently.
+     *
+     * @param[out] DetectedDoubleBitErrorsPtr   The number of detected double-bit errors. Double-bit
+     *                                          errors are fatal errors and the data base is corrupt. The hardware
+     *                                          cannot correct the error without help from software. The instance
+     *                                          has generated an interrupt and this counter can be used to find
+     *                                          the instance which caused the interrupt if multiple instances are
+     *                                          in use. Lookups detecting double-bit errors will not discard the lookup,
+     *                                          the lookup result might be corrupt. Once the double-bit error is
+     *                                          detected the interrupt pin is asserted and it is advised to use this
+     *                                          signal to discard packets until the data base is corrected.
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetDcamGetEccCountersClearOnRead(XilSdnetDcamCtx *CtxPtr,
+                                                             uint32_t *CorrectedSingleBitErrorsPtr,
+                                                             uint32_t *DetectedDoubleBitErrorsPtr);
+
+    /**
+     * Reads and clears the ECC adress registers of the DCAM instance.
+     *
+     * @param[in] CtxPtr                            Pointer to the DCAM instance context
+     *
+     * @param[out] FailingAddressSingleBitErrorPtr  The address of the first single bit error detected and corrected
+     *                                              by the hardware scrubbing process. Additional errors might
+     *                                              have been detected during a hardware lookup and then corrected
+     *                                              dynamically, but this register only reflects the
+     *                                              errors detected by hardware scrubbing.
+     *
+     * @param[out] FailingAddressDoubleBitErrorPtr The address of the first double-bit error detected by the
+     *                                              hardware scrubbing process.
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+    XilSdnetReturnType XilSdnetDcamGetEccAddressesClearOnRead(XilSdnetDcamCtx *CtxPtr,
+                                                              uint32_t *FailingAddressSingleBitErrorPtr,
+                                                              uint32_t *FailingAddressDoubleBitErrorPtr);
+
+    /**
+     * Destroy the DCAM instance
+     *
+     * All memory allocated by \ref XilSdnetDcamInit is released.
+     *
+     * @param[in] CtxPtr    Pointer to the DCAM instance context
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetDcamExit(XilSdnetDcamCtx *CtxPtr);
+
+    /** @} */
+
+    /**
+     * @addtogroup sdnet_bcam SDNet BCAM public API
+     * @{
+     * Please refer to the following sections to understand key and response data layout:
+     *  - \ref fmt
+     *  - \ref endian
+     */
+
+    /**
+     * Initialization function for the BCAM driver API
+     *
+     * @param[in,out] CtxPtr        Pointer to an uninitialized BCAM context structure instance.
+     *                              Is populated by function execution.
+     *
+     * @param[in] EnvIfPtr          Pointer to environment interface definition
+     *
+     * @param[in] ConfigPtr         Pointer to driver configuration definition
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetBcamInit(XilSdnetBcamCtx *CtxPtr, XilSdnetEnvIf *EnvIfPtr, XilSdnetCamConfig *ConfigPtr);
+
+    /**
+     * Resets a BCAM instance.
+     *
+     * All existing entries in the table (if any) are deleted.
+     *
+     * @param[in]  CtxPtr           Pointer to the BCAM instance context
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetBcamReset(XilSdnetBcamCtx *CtxPtr);
+
+    /**
+     * Inserts an entry into the BCAM instance.
+     *
+     * If an existing matching entry is found, the function fails by returning error
+     * code XIL_SDNET_CAM_ERR_DUPLICATE_FOUND. If an existing matching entry is not
+     * found, then it is inserted in the BCAM instance.
+     *
+     * @param[in] CtxPtr        Pointer to the BCAM instance context
+     *
+     * @param[in] KeyPtr        Pointer to byte array holding the key for the entry
+     *
+     * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetBcamInsert(XilSdnetBcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *ResponsePtr);
+
+    /**
+     * Updates an entry in the BCAM instance.
+     *
+     * If the entry is found, the response is updated. If the entry is not found,
+     * the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * @param[in] CtxPtr        Pointer to the BCAM instance context
+     *
+     * @param[in] KeyPtr        Pointer to byte array holding the key for the entry
+     *
+     * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetBcamUpdate(XilSdnetBcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *ResponsePtr);
+
+    /**
+     * Gets an entry from the BCAM instance with the matching response value.
+     *
+     * If the entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * The PositionPtr argument enables multiple matching entries to be found. The first time the function is
+     * called the integer at PositionPtr should be set to zero. To find all entries matching the response, the function is
+     * called multiple times, each call returns one matching entry.
+     *
+     * For every consecutive call the returned PositionPtr value must be used again as input argument.
+     * When XIL_SDNET_CAM_ERR_KEY_NOT_FOUND is returned no more entries matching the response could be found.
+     *
+     * The ResponseMaskPtr is used to limit the search to subfields of the response. If the complete,
+     * exact response value is searched, then all bits in the byte array at ResponseMaskPtr should be set to one.
+     * By setting the bits to all zeros, any response value will match.
+     * This can be used for getting all entries without prior knowledge of the response values.
+     *
+     * The function does not read from the hardware, it reads from the shadow copy in system memory.
+     * The function uses a linear search.
+     *
+     * @param[in] CtxPtr            Pointer to the BCAM instance context
+     *
+     * @param[in] ResponsePtr       Pointer to byte array holding the response to search for
+     *
+     * @param[in] ResponseMaskPtr   The buffers pointed to by ResponsePtr and ResponseMaskPtr are ANDed and then
+     *                              searched for. The stored response is also ANDed
+     *                              with the ResponseMaskPtr before compare takes place.
+     *
+     * @param[in,out] PositionPtr   Position in the database. Used for
+     *                              consecutive get operations, set to 0 for
+     *                              first get.
+     *
+     * @param[out] KeyPtr           Pointer to byte array with storage for the key that is read
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetBcamGetByResponse(XilSdnetBcamCtx *CtxPtr,
+                                                 uint8_t *ResponsePtr,
+                                                 uint8_t *ResponseMaskPtr,
+                                                 uint32_t *PositionPtr,
+                                                 uint8_t *KeyPtr);
+
+    /**
+     * Gets an entry from the BCAM instance with the specified key
+
+     * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     * The function does not read from the hardware, it reads from the shadow copy in system memory.
+     * The function uses a hash table and is fast.
+     *
+     * @param[in] CtxPtr        Pointer to the BCAM instance context
+     *
+     * @param[in] KeyPtr        Pointer to byte array holding the key to search for
+     *
+     * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetBcamGetByKey(XilSdnetBcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *ResponsePtr);
+
+    /**
+     * Looks up an entry in the BCAM instance.
+     *
+     * This function provides the same response as if a lookup had been performed in hardware.
+     * If an entry is not found, the function returns XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * @param[in] CtxPtr        Pointer to the BCAM instance context
+     *
+     * @param[in] KeyPtr        Pointer to byte array holding the key to lookup
+     *
+     * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetBcamLookup(XilSdnetBcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *ResponsePtr);
+
+    /**
+     * Delete an entry with the specified key from the BCAM instance.
+     *
+     * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * @param[in] CtxPtr    Pointer to the BCAM instance context
+     *
+     * @param[in] KeyPtr    Pointer to byte array holding the key to be deleted
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetBcamDelete(XilSdnetBcamCtx *CtxPtr, uint8_t *KeyPtr);
+
+    /**
+     * Reads and clears the ECC counters of the BCAM instance.
+     *
+     * @param[in] CtxPtr                        Pointer to the BCAM instance context
+     *
+     * @param[out] CorrectedSingleBitErrorsPtr  The number of single bit errors the hardware scrubbing
+     *                                          process has detected and corrected. Errors might
+     *                                          have been detected by a hardware lookup and then corrected
+     *                                          dynamically for the lookups, but still not counted.
+     *                                          The scrubbing process runs in the background and corrects
+     *                                          errors permanently. The counter is only incremented after
+     *                                          the error is corrected permanently.
+     *
+     * @param[out] DetectedDoubleBitErrorsPtr   The number of detected double-bit errors. Double-bit
+     *                                          errors are fatal errors and the data base is corrupt. The hardware
+     *                                          cannot correct the error without help from software. The instance
+     *                                          has generated an interrupt and this counter can be used to find
+     *                                          the instance which caused the interrupt if multiple instances are
+     *                                          in use. Lookups detecting double-bit errors will not discard the lookup,
+     *                                          the lookup result might be corrupt. Once the double-bit error is
+     *                                          detected the interrupt pin is asserted and it is advised to use this
+     *                                          signal to discard packets until the data base is corrected.
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetBcamGetEccCountersClearOnRead(XilSdnetBcamCtx *CtxPtr,
+                                                             uint32_t *CorrectedSingleBitErrorsPtr,
+                                                             uint32_t *DetectedDoubleBitErrorsPtr);
+
+    /**
+     * Reads and clears the ECC adress registers of the BCAM instance.
+     *
+     * @param[in] CtxPtr                            Pointer to the BCAM instance context
+     *
+     * @param[out] FailingAddressSingleBitErrorPtr  The address of the first single bit error detected and corrected
+     *                                              by the hardware scrubbing process. Additional errors might
+     *                                              have been detected during a hardware lookup and then corrected
+     *                                              dynamically, but this register only reflects the
+     *                                              errors detected by hardware scrubbing.
+     *
+     * @param[out] FailingAddressDoubleBitErrorPtr The address of the first double-bit error detected by the
+     *                                              hardware scrubbing process.
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+    XilSdnetReturnType XilSdnetBcamGetEccAddressesClearOnRead(XilSdnetBcamCtx *CtxPtr,
+                                                              uint32_t *FailingAddressSingleBitErrorPtr,
+                                                              uint32_t *FailingAddressDoubleBitErrorPtr);
+
+    /**
+     * Rewrite all BCAM memory contents to recover from ECC double-bit error
+     *
+     * @param[in] CtxPtr Pointer to the BCAM instance context
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetBcamRewrite(XilSdnetBcamCtx *CtxPtr);
+
+    /**
+     * Destroy the BCAM instance
+     *
+     * All memory allocated by \ref XilSdnetBcamInit is released.
+     *
+     * @param[in] CtxPtr    Pointer to the BCAM instance context
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetBcamExit(XilSdnetBcamCtx *CtxPtr);
+
+    /** @} */
+
+    /**
+     * @addtogroup sdnet_tcam SDNet TCAM public API
+     * @{
+     * Please refer to the following sections to understand key, mask and response data layout:
+     *  - \ref fmt
+     *  - \ref endian
+     */
+
+    /**
+     * Initialization function for the TCAM driver API
+     *
+     * @param[in,out] CtxPtr        Pointer to an uninitialized TCAM context structure instance.
+     *                              Is populated by function execution.
+     *
+     * @param[in] EnvIfPtr          Pointer to environment interface definition
+     *
+     * @param[in] ConfigPtr         Pointer to driver configuration definition
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetTcamInit(XilSdnetTcamCtx *CtxPtr, XilSdnetEnvIf *EnvIfPtr, XilSdnetCamConfig *ConfigPtr);
+
+    /**
+     * Resets a TCAM instance.
+     *
+     * All existing entries in the table (if any) are deleted
+     *
+     * @param[in]  CtxPtr           Pointer to the TCAM instance context
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetTcamReset(XilSdnetTcamCtx *CtxPtr);
+
+    /**
+     * Inserts an entry into the TCAM instance.
+     *
+     * If an existing matching entry is found, the function fails by returning error
+     * code XIL_SDNET_CAM_ERR_DUPLICATE_FOUND. If an existing matching entry is not
+     * found, then it is inserted in the TCAM instance.
+     *
+     * @param[in] CtxPtr        Pointer to the TCAM instance context
+     *
+     * @param[in] KeyPtr        Pointer to byte array holding the key for the entry
+     *
+     * @param[in] MaskPtr       Pointer to byte array holding the mask for the entry
+     *
+     * @param[in] Priority      The priority of the entry. If multiple matches occur, the winning matching
+     *                          entry is determined based on the priority value. The entry with the lowest priority
+     *                          wins. If there are multiple matches with the same lowest priority, any of them becomes
+     *                          the winner.
+     *
+     * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetTcamInsert(XilSdnetTcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr, uint32_t Priority, uint8_t *ResponsePtr);
+
+    /**
+     * Updates an entry in the TCAM instance.
+     *
+     * If the entry is found, the response is updated. If the entry is not found,
+     * the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * @param[in] CtxPtr        Pointer to the TCAM instance context
+     *
+     * @param[in] KeyPtr        Pointer to byte array holding the key for the entry
+     *
+     * @param[in] MaskPtr       Pointer to byte array holding the mask for the entry
+     *
+     * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetTcamUpdate(XilSdnetTcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr, uint8_t *ResponsePtr);
+
+    /**
+     * Gets an entry from the TCAM instance with the matching response value.
+     *
+     * If the entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * The PositionPtr argument enables multiple matching entries to be found. The first time the function is
+     * called the integer at PositionPtr should be set to zero. To find all entries matching the response, the function is
+     * called multiple times, each call returns one matching entry.
+     *
+     * For every consecutive call the returned PositionPtr value must be used again as input argument.
+     * When XIL_SDNET_CAM_ERR_KEY_NOT_FOUND is returned no more entries matching the response could be found.
+     *
+     * The ResponseMaskPtr is used to limit the search to subfields of the response. If the complete,
+     * exact response value is searched, then all bits in the byte array at ResponseMaskPtr should be set to one.
+     * By setting the bits to all zeros, any response value will match.
+     * This can be used for getting all entries without prior knowledge of the response values.
+     *
+     * The function does not read from the hardware, it reads from the shadow copy in system memory.
+     * The function uses a linear search.
+     *
+     * @param[in] CtxPtr            Pointer to the TCAM instance context
+     *
+     * @param[in] ResponsePtr       Pointer to byte array holding the response to search for
+     *
+     * @param[in] ResponseMaskPtr   The buffers pointed to by ResponsePtr and ResponseMaskPtr are ANDed and then
+     *                              searched for. The stored response is also ANDed
+     *                              with the ResponseMaskPtr before compare takes place.
+     *
+     * @param[in,out] PositionPtr   Position in the database. Used for
+     *                              consecutive get operations, set to 0 for
+     *                              first get.
+     *
+     * @param[out] KeyPtr           Pointer to byte array with storage for the key that is read
+     *
+     * @param[out] MaskPtr          Pointer to byte array with storage for the mask that is read
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetTcamGetByResponse(XilSdnetTcamCtx *CtxPtr,
+                                                 uint8_t *ResponsePtr,
+                                                 uint8_t *ResponseMaskPtr,
+                                                 uint32_t *PositionPtr,
+                                                 uint8_t *KeyPtr,
+                                                 uint8_t *MaskPtr);
+
+    /**
+     * Gets an entry from the TCAM instance with the specified key
+
+     * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     * The function does not read from the hardware, it reads from the shadow copy in system memory.
+     * The function uses a hash table and is fast.
+     *
+     * @param[in] CtxPtr        Pointer to the TCAM instance context
+     *
+     * @param[in] KeyPtr        Pointer to byte array holding the key to search for
+     *
+     * @param[in] MaskPtr       Pointer to byte array holding the mask to search for
+     *
+     * @param[out] PriorityPtr  Pointer to integer with storage for the priority of the entry that is read
+     *
+     * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetTcamGetByKey(XilSdnetTcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr, uint32_t *PriorityPtr, uint8_t *ResponsePtr);
+
+    /**
+     * Looks up an entry in the TCAM instance.
+     *
+     * This function provides the same response as if a lookup had been performed in hardware.
+     * If an entry is not found, the function returns XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * @param[in] CtxPtr        Pointer to the TCAM instance context
+     *
+     * @param[in] KeyPtr        Pointer to byte array holding the key to lookup
+     *
+     * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetTcamLookup(XilSdnetTcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *ResponsePtr);
+
+    /**
+     * Delete an entry with the specified key from the TCAM instance.
+     *
+     * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * @param[in] CtxPtr    Pointer to the TCAM instance context
+     *
+     * @param[in] KeyPtr    Pointer to byte array holding the key to be deleted
+     *
+     * @param[in] MaskPtr   Pointer to byte array holding the mask to be deleted
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetTcamDelete(XilSdnetTcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr);
+
+    /**
+     * Reads and clears the ECC counters of the TCAM instance.
+     *
+     * @param[in] CtxPtr                        Pointer to the TCAM instance context
+     *
+     * @param[out] CorrectedSingleBitErrorsPtr  The number of single bit errors the hardware scrubbing
+     *                                          process has detected and corrected. Errors might
+     *                                          have been detected by a hardware lookup and then corrected
+     *                                          dynamically for the lookups, but still not counted.
+     *                                          The scrubbing process runs in the background and corrects
+     *                                          errors permanently. The counter is only incremented after
+     *                                          the error is corrected permanently.
+     *
+     * @param[out] DetectedDoubleBitErrorsPtr   The number of detected double-bit errors. Double-bit
+     *                                          errors are fatal errors and the data base is corrupt. The hardware
+     *                                          cannot correct the error without help from software. The instance
+     *                                          has generated an interrupt and this counter can be used to find
+     *                                          the instance which caused the interrupt if multiple instances are
+     *                                          in use. Lookups detecting double-bit errors will not discard the lookup,
+     *                                          the lookup result might be corrupt. Once the double-bit error is
+     *                                          detected the interrupt pin is asserted and it is advised to use this
+     *                                          signal to discard packets until the data base is corrected.
+     */
+
+    XilSdnetReturnType XilSdnetTcamGetEccCountersClearOnRead(XilSdnetTcamCtx *CtxPtr,
+                                                             uint32_t *CorrectedSingleBitErrorsPtr,
+                                                             uint32_t *DetectedDoubleBitErrorsPtr);
+
+    /**
+     * Reads and clears the ECC adress registers of the TCAM instance.
+     *
+     * @param[in] CtxPtr                            Pointer to the TCAM instance context
+     *
+     * @param[out] FailingAddressSingleBitErrorPtr  The address of the first single bit error detected and corrected
+     *                                              by the hardware scrubbing process. Additional errors might
+     *                                              have been detected during a hardware lookup and then corrected
+     *                                              dynamically, but this register only reflects the
+     *                                              errors detected by hardware scrubbing.
+     *
+     * @param[out] FailingAddressDoubleBitErrorPtr The address of the first double-bit error detected by the
+     *                                              hardware scrubbing process.
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+    XilSdnetReturnType XilSdnetTcamGetEccAddressesClearOnRead(XilSdnetTcamCtx *CtxPtr,
+                                                              uint32_t *FailingAddressSingleBitErrorPtr,
+                                                              uint32_t *FailingAddressDoubleBitErrorPtr);
+
+    /**
+     * Rewrite all TCAM memory contents to recover from ECC double-bit error
+     *
+     * @param[in] CtxPtr Pointer to the TCAM instance context
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetTcamRewrite(XilSdnetTcamCtx *CtxPtr);
+
+    /**
+     * Destroy the TCAM instance
+     *
+     * All memory allocated by \ref XilSdnetTcamInit is released.
+     *
+     * @param[in] CtxPtr    Pointer to the TCAM instance context
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetTcamExit(XilSdnetTcamCtx *CtxPtr);
+
+    /** @} */
+
+    /**
+     * @addtogroup sdnet_stcam SDNet STCAM public API
+     * @{
+     * Please refer to the following sections to understand key, mask and response data layout:
+     *  - \ref fmt
+     *  - \ref endian
+     */
+
+    /**
+     * Initialization function for the STCAM driver API
+     *
+     * @param[in,out] CtxPtr        Pointer to an uninitialized STCAM context structure instance.
+     *                              Is populated by function execution.
+     *
+     * @param[in] EnvIfPtr          Pointer to environment interface definition
+     *
+     * @param[in] ConfigPtr         Pointer to driver configuration definition
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetStcamInit(XilSdnetStcamCtx *CtxPtr, XilSdnetEnvIf *EnvIfPtr, XilSdnetCamConfig *ConfigPtr);
+
+    /**
+     * Resets a STCAM instance.
+     *
+     * All existing entries in the table (if any) are deleted
+     *
+     * @param[in]  CtxPtr           Pointer to the STCAM instance context
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetStcamReset(XilSdnetStcamCtx *CtxPtr);
+
+    /**
+     * Inserts an entry into the STCAM instance.
+     *
+     * If an existing matching entry is found, the function fails by returning error
+     * code XIL_SDNET_CAM_ERR_DUPLICATE_FOUND. If an existing matching entry is not
+     * found, then it is inserted in the STCAM instance.
+     *
+     * @param[in] CtxPtr        Pointer to the STCAM instance context
+     *
+     * @param[in] KeyPtr        Pointer to byte array holding the key for the entry
+     *
+     * @param[in] MaskPtr       Pointer to byte array holding the mask for the entry
+     *
+     * @param[in] Priority      The priority of the entry. If multiple matches occur, the winning matching
+     *                          entry is determined based on the priority value. The entry with the lowest priority
+     *                          wins. If there are multiple matches with the same lowest priority, any of them becomes
+     *                          the winner.
+     *
+     * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetStcamInsert(XilSdnetStcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr, uint32_t Priority, uint8_t *ResponsePtr);
+
+    /**
+     * Updates an entry in the STCAM instance.
+     *
+     * If the entry is found, the response is updated. If the entry is not found,
+     * the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * @param[in] CtxPtr        Pointer to the STCAM instance context
+     *
+     * @param[in] KeyPtr        Pointer to byte array holding the key for the entry
+     *
+     * @param[in] MaskPtr       Pointer to byte array holding the mask for the entry
+     *
+     * @param[in] ResponsePtr   Pointer to byte array holding the response of the entry
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetStcamUpdate(XilSdnetStcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr, uint8_t *ResponsePtr);
+
+    /**
+     * Gets an entry from the STCAM instance with the matching response value.
+     *
+     * If the entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * The PositionPtr argument enables multiple matching entries to be found. The first time the function is
+     * called the integer at PositionPtr should be set to zero. To find all entries matching the response, the function is
+     * called multiple times, each call returns one matching entry.
+     *
+     * For every consecutive call the returned PositionPtr value must be used again as input argument.
+     * When XIL_SDNET_CAM_ERR_KEY_NOT_FOUND is returned no more entries matching the response could be found.
+     *
+     * The ResponseMaskPtr is used to limit the search to subfields of the response. If the complete,
+     * exact response value is searched, then all bits in the byte array at ResponseMaskPtr should be set to one.
+     * By setting the bits to all zeros, any response value will match.
+     * This can be used for getting all entries without prior knowledge of the response values.
+     *
+     * The function does not read from the hardware, it reads from the shadow copy in system memory.
+     * The function uses a linear search.
+     *
+     * @param[in] CtxPtr            Pointer to the STCAM instance context
+     *
+     * @param[in] ResponsePtr       Pointer to byte array holding the response to search for
+     *
+     * @param[in] ResponseMaskPtr   The buffers pointed to by ResponsePtr and ResponseMaskPtr are ANDed and then
+     *                              searched for. The stored response is also ANDed
+     *                              with the ResponseMaskPtr before compare takes place.
+     *
+     * @param[in,out] PositionPtr   Position in the database. Used for
+     *                              consecutive get operations, set to 0 for
+     *                              first get.
+     *
+     * @param[out] KeyPtr           Pointer to byte array with storage for the key that is read
+     *
+     * @param[out] MaskPtr          Pointer to byte array with storage for the mask that is read
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetStcamGetByResponse(XilSdnetStcamCtx *CtxPtr,
+                                                  uint8_t *ResponsePtr,
+                                                  uint8_t *ResponseMaskPtr,
+                                                  uint32_t *PositionPtr,
+                                                  uint8_t *KeyPtr,
+                                                  uint8_t *MaskPtr);
+
+    /**
+     * Gets an entry from the STCAM instance with the specified key
+
+     * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     * The function does not read from the hardware, it reads from the shadow copy in system memory.
+     * The function uses a hash table and is fast.
+     *
+     * @param[in] CtxPtr        Pointer to the STCAM instance context
+     *
+     * @param[in] KeyPtr        Pointer to byte array holding the key to search for
+     *
+     * @param[in] MaskPtr       Pointer to byte array holding the mask to search for
+     *
+     ** @param[out] PriorityPtr Pointer to integer with storage for the priority of the entry that is read
+     *
+     * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetStcamGetByKey(XilSdnetStcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr, uint32_t *PriorityPtr, uint8_t *ResponsePtr);
+
+    /**
+     * Looks up an entry in the STCAM instance.
+     *
+     * This function provides the same response as if a lookup had been performed in hardware.
+     * If an entry is not found, the function returns XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * @param[in] CtxPtr        Pointer to the STCAM instance context
+     *
+     * @param[in] KeyPtr        Pointer to byte array holding the key to lookup
+     *
+     * @param[out] ResponsePtr  Pointer to byte array with storage for the response that is read
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetStcamLookup(XilSdnetStcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *ResponsePtr);
+
+    /**
+     * Delete an entry with the specified key from the STCAM instance.
+     *
+     * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+     *
+     * @param[in] CtxPtr    Pointer to the STCAM instance context
+     *
+     * @param[in] KeyPtr    Pointer to byte array holding the key to be deleted
+     *
+     * @param[in] MaskPtr   Pointer to byte array holding the mask to be deleted
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetStcamDelete(XilSdnetStcamCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr);
+
+    /**
+     * Reads and clears the ECC counters of the STCAM instance.
+     *
+     * @param[in] CtxPtr                        Pointer to the STCAM instance context
+     *
+     * @param[out] CorrectedSingleBitErrorsPtr  The number of single bit errors the hardware scrubbing
+     *                                          process has detected and corrected. Errors might
+     *                                          have been detected by a hardware lookup and then corrected
+     *                                          dynamically for the lookups, but still not counted.
+     *                                          The scrubbing process runs in the background and corrects
+     *                                          errors permanently. The counter is only incremented after
+     *                                          the error is corrected permanently.
+     *
+     * @param[out] DetectedDoubleBitErrorsPtr   The number of detected double-bit errors. Double-bit
+     *                                          errors are fatal errors and the data base is corrupt. The hardware
+     *                                          cannot correct the error without help from software. The instance
+     *                                          has generated an interrupt and this counter can be used to find
+     *                                          the instance which caused the interrupt if multiple instances are
+     *                                          in use. Lookups detecting double-bit errors will not discard the lookup,
+     *                                          the lookup result might be corrupt. Once the double-bit error is
+     *                                          detected the interrupt pin is asserted and it is advised to use this
+     *                                          signal to discard packets until the data base is corrected.
+     */
+
+    XilSdnetReturnType XilSdnetStcamGetEccCountersClearOnRead(XilSdnetStcamCtx *CtxPtr,
+                                                              uint32_t *CorrectedSingleBitErrorsPtr,
+                                                              uint32_t *DetectedDoubleBitErrorsPtr);
+
+    /**
+     * Reads and clears the ECC adress registers of the STCAM instance.
+     *
+     * @param[in] CtxPtr                            Pointer to the STCAM instance context
+     *
+     * @param[out] FailingAddressSingleBitErrorPtr  The address of the first single bit error detected and corrected
+     *                                              by the hardware scrubbing process. Additional errors might
+     *                                              have been detected during a hardware lookup and then corrected
+     *                                              dynamically, but this register only reflects the
+     *                                              errors detected by hardware scrubbing.
+     *
+     * @param[out] FailingAddressDoubleBitErrorPtr The address of the first double-bit error detected by the
+     *                                              hardware scrubbing process.
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+    XilSdnetReturnType XilSdnetStcamGetEccAddressesClearOnRead(XilSdnetStcamCtx *CtxPtr,
+                                                               uint32_t *FailingAddressSingleBitErrorPtr,
+                                                               uint32_t *FailingAddressDoubleBitErrorPtr);
+
+    /**
+     * Rewrite all STCAM memory contents to recover from ECC double-bit error
+     *
+     * @param[in] CtxPtr Pointer to the TCAM instance context
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetStcamRewrite(XilSdnetStcamCtx *CtxPtr);
+
+    /**
+     * Destroy the STCAM instance
+     *
+     * All memory allocated by \ref XilSdnetStcamInit is released.
+     *
+     * @param[in] CtxPtr    Pointer to the STCAM instance context
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetStcamExit(XilSdnetStcamCtx *CtxPtr);
+
+    /** @} */
+
+    /**
+     * @addtogroup sdnet_cam_util SDNet CAM utilities
+     * @{
+     * A collection of helper functions for use with the SDNET CAM API.
+     */
+
+    /**
+     * Please refer to the following sections to understand key, mask and response data layout:
+     *  - \ref fmt
+     *
+     * Function that uses the Key and mask format information from FormatStringPtr to calculate the Key width in bits.
+     *
+     * @param[in] FormatStringPtr   Pointer to the STCAM instance context
+     *
+     * @param[out] KeyLengthPtr     Pointer to byte array with storage for the response that is read
+     *
+     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+     */
+
+    XilSdnetReturnType XilSdnetCamGetKeyLengthInBits(char *FormatStringPtr, uint32_t *KeyLengthPtr);
+    /** @} */
 
 #ifdef __cplusplus
 }

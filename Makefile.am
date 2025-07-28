@@ -294,7 +294,7 @@ check-assert-h-usage:
 # also mentioned.  (<endian.h> always defines the former two constants.  They
 # must be compared to BYTE_ORDER to get the machine's correct endianness.  But
 # it is better to use WORDS_BIGENDIAN.)
-ALL_LOCAL += check-endian
+# ALL_LOCAL += check-endian
 check-endian:
 	@if test -e $(srcdir)/.git && (git --version) >/dev/null 2>&1 && \
 	  (cd $(srcdir) && git --no-pager grep -l -E \

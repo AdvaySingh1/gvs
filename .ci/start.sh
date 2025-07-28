@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# export PATH="/usr/local/share/openvswitch/scripts:$PATH"
+export PATH="/usr/local/share/openvswitch/scripts:$PATH"
 
 # Start OVS with userspace datapath
-# ovs-ctl --system-id=random --delete-bridges start
+ovs-ctl --system-id=random --delete-bridges start
 ovs-vsctl set Open_vSwitch . other_config:max-idle=600000 -- \
   set Open_vSwitch . other_config:gigaflow-enable=true -- \
   set Open_vSwitch . other_config:gigaflow-lookup-enable=true -- \
@@ -20,6 +20,6 @@ ovs-vsctl set Open_vSwitch . other_config:max-idle=600000 -- \
 
 
 ovs-vsctl add-br br0
-ovs-vsctl set-fail-mode br0 secure
+# ovs-vsctl set-fail-mode br0 secure
 # ovs-vsctl add-port br0 ens16f0
 # ovs-vsctl add-port br0 ens16f1
