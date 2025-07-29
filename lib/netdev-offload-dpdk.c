@@ -3202,11 +3202,31 @@ netdev_offload_p4sdnet_init_flow_api(struct netdev *netdev OVS_UNUSED)
 
     if (status == XIL_SDNET_SUCCESS)
     {
+        /* Initialize the rest of the context with dummy/random values */
+        memset(&p4sdnet_offload_ctx.target_ctx, 0xAB, sizeof(p4sdnet_offload_ctx.target_ctx));
+
+        /* Initialize table context pointers with random values */
+        for (int i = 0; i < P4SDNET_GIGAFLOW_TABLE_MAX; i++)
+        {
+            p4sdnet_offload_ctx.table_ctx_ptr[i] = (XilSdnetTableCtx *)(0xDEADBEEF + i * 0x1000);
+        }
+
+        /* Initialize action IDs with random values */
+        for (int i = 0; i < P4SDNET_GIGAFLOW_TABLE_MAX; i++)
+        {
+            for (int j = 0; j < P4SDNET_GIGAFLOW_ACTION_MAX; j++)
+            {
+                p4sdnet_offload_ctx.action_id[i][j] = 0xCAFEBABE + (i * 100) + j;
+            }
+        }
+
         /* p4sdnet flow api is available for use, no need to reinitialize */
         netdev_p4sdnet_set_flow_api_initialized();
     }
-#endif
+
     return 0;
+#endif
+    return EOPNOTSUPP;
 }
 
 // static int
@@ -3309,8 +3329,8 @@ const struct netdev_flow_api netdev_offload_dpdk_p4sdnet = {
     // .init_flow_api = netdev_offload_dpdk_init_flow_api,
     .init_flow_api = netdev_offload_p4sdnet_init_flow_api,
     .uninit_flow_api = netdev_offload_p4sdnet_uninit_flow_api,
-    .flow_get = netdev_offload_p4sdnet_flow_get,
-    .flow_flush = netdev_offload_p4sdnet_flow_flush,
-    .hw_miss_packet_recover = netdev_offload_p4sdnet_hw_miss_packet_recover,
-    .flow_get_n_flows = netdev_offload_p4sdnet_get_n_flows,
+    // .flow_get = netdev_offload_p4sdnet_flow_get,
+    // .flow_flush = netdev_offload_p4sdnet_flow_flush,
+    // .hw_miss_packet_recover = netdev_offload_p4sdnet_hw_miss_packet_recover,
+    // .flow_get_n_flows = netdev_offload_p4sdnet_get_n_flows,
 };

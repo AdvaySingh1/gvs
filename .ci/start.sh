@@ -20,6 +20,6 @@ ovs-vsctl set Open_vSwitch . other_config:max-idle=600000 -- \
 
 
 ovs-vsctl add-br br0
-# ovs-vsctl set-fail-mode br0 secure
-# ovs-vsctl add-port br0 ens16f0
-# ovs-vsctl add-port br0 ens16f1
+ovs-vsctl set-fail-mode br0 secure
+ovs-vsctl add-port br0 ens16f0
+ovs-vsctl add-port br0 ens16f1

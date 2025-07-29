@@ -211,3 +211,11 @@ flow_wildcards_init_catchall(struct flow_wildcards *wc)
 {
     memset(&wc->masks, 0, sizeof wc->masks);
 }
+
+FIXED: due to gigaflow config
+
+nl_attr_get(const struct nlattr *nla)
+{
+    ovs_assert(nla->nla_len >= NLA_HDRLEN);
+    return nla + 1;
+}
