@@ -109,18 +109,16 @@ enum p4sdnet_actions
     P4SDNET_DROP_ACTION,
     P4SDNET_INSERT_NEXT_TABLE_TAG_ACTION,
     P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION,
-    P4SDNET_NO_ACTION,
 
     P4SDNET_GIGAFLOW_ACTION_MAX
 };
 
 static char *p4sdnet_table_names[] = {"G0", "G1", "G2", "G3"};
 static char *p4sdnet_action_names[] = {
-    "forward",
-    "drop",
-    "insert_next_table_tag",
-    "insert_next_table_tag_and_forward",
-    "NoAction",
+    "forwardPacket",
+    "dropPacket",
+    "set_table_tag",
+    "set_table_tag_and_forward",
 };
 
 /* P4SDNet key bytes for Gigaflow offload
@@ -3180,6 +3178,93 @@ const struct netdev_flow_api netdev_offload_dpdk = {
 };
 
 static int
+netdev_offload_p4sdnet_install_default_rules()
+{
+    VLOG_INFO("calling netdev_offload_p4sdnet_install_default_rules()\n");
+    uint32_t ForwardActionId, SetTableTagActionId;
+    uint8_t giga_sampleKeyArray[GIGAFLOW_KEY_LEN] = {
+        0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00,
+        0x00,
+        0x00, 0x00,
+        0x00, 0x00};
+
+    // Fixed mask arrays - only ipv4.dst is exact match (0xff), others are don't care (0x00)
+    uint8_t giga_sampleMaskArray[GIGAFLOW_KEY_LEN] = {
+        0xff,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00,
+        0x00,
+        0x00,
+        0x00, 0x00,
+        0x00, 0x00};
+    uint8_t giga_sampleActionParamsArray_G0[GIGAFLOW_ACTION_LEN] = {0x00, 0x00};
+    uint8_t giga_sampleActionParamsArray_G1[GIGAFLOW_ACTION_LEN] = {0x00, 0x00};
+    uint8_t giga_sampleActionParamsArray_G2[GIGAFLOW_ACTION_LEN] = {0x00, 0x00};
+    uint8_t giga_sampleActionParamsArray_G3[GIGAFLOW_ACTION_LEN] = {0x00, 0x02};
+    uint32_t giga_samplePriority = 0x00;
+    const int numTables = 4;
+    uint8_t *actionParamsArrays[] = {
+        (uint8_t *)giga_sampleActionParamsArray_G0,
+        (uint8_t *)giga_sampleActionParamsArray_G1,
+        (uint8_t *)giga_sampleActionParamsArray_G2,
+        (uint8_t *)giga_sampleActionParamsArray_G3};
+    XilSdnetReturnType Result;
+    // Configure all 4 tables with different actions
+    for (int tableIndex = 0; tableIndex < numTables; tableIndex++)
+    {
+        Result = XilSdnetTableGetActionId(p4sdnet_offload_ctx.table_ctx_ptr[tableIndex], "forwardPacket", &ForwardActionId);
+        if (Result != XIL_SDNET_SUCCESS)
+        {
+            return Result;
+        }
+        Result = XilSdnetTableGetActionId(p4sdnet_offload_ctx.table_ctx_ptr[tableIndex], "set_table_tag", &SetTableTagActionId);
+        if (Result != XIL_SDNET_SUCCESS)
+        {
+            return Result;
+        }
+
+        // Determine action and parameters based on table
+        uint32_t CurrentActionId;
+        uint8_t *currentActionParams;
+
+        if (tableIndex < 3)
+        {
+            // First 3 tables (G0, G1, G2) use set_table_tag action
+            CurrentActionId = SetTableTagActionId;
+            currentActionParams = actionParamsArrays[tableIndex];
+        }
+        else
+        {
+            // Last table (G3) uses forwardPacket action
+            CurrentActionId = ForwardActionId;
+            currentActionParams = actionParamsArrays[tableIndex];
+        }
+        Result = XilSdnetTableInsert(p4sdnet_offload_ctx.table_ctx_ptr[tableIndex],
+                                     giga_sampleKeyArray,
+                                     giga_sampleMaskArray,
+                                     giga_samplePriority,
+                                     CurrentActionId,
+                                     currentActionParams);
+        if (Result != XIL_SDNET_SUCCESS)
+        {
+            return Result;
+        }
+    }
+
+    printf("\n=== Default Rule: Forward To CPU Initialized");
+    return XIL_SDNET_SUCCESS;
+}
+
+static int
 netdev_offload_p4sdnet_init_flow_api(struct netdev *netdev OVS_UNUSED)
 {
     VLOG_INFO("calling netdev_p4sdnet_offload_dpdk_init_flow_api()\n");
@@ -3189,26 +3274,38 @@ netdev_offload_p4sdnet_init_flow_api(struct netdev *netdev OVS_UNUSED)
         return 0;
     }
 
-#ifdef HAVE_P4SDNET_OFFLOAD
+    // #ifdef HAVE_P4SDNET_OFFLOAD
     VLOG_INFO("netdev_p4sdnet_offload_dpdk_init_flow_api()"
               " -> HAVE_P4SDNET_OFFLOAD is enabled\n");
 
-    XilSdnetReturnType status;
+    XilSdnetReturnType Result;
 
     /* create the environment pointer */
-    status = NfpCreateEnvIf(&p4sdnet_offload_ctx.env_if,
-                            P4_SDNET_BASE_ADDRESS, XILINX_FPGA_SYSFS_FILE);
-    VLOG_INFO("NfpCreateEnvIf() -> Result = %d\n", status);
+    Result = NfpCreateEnvIf(
+        &p4sdnet_offload_ctx.env_if,
+        P4_SDNET_BASE_ADDRESS, XILINX_FPGA_SYSFS_FILE);
+    VLOG_INFO("NfpCreateEnvIf() -> Result = %d\n", Result);
 
-    if (status == XIL_SDNET_SUCCESS)
+    if (Result == XIL_SDNET_SUCCESS)
     {
-        /* Initialize the rest of the context with dummy/random values */
-        memset(&p4sdnet_offload_ctx.target_ctx, 0xAB, sizeof(p4sdnet_offload_ctx.target_ctx));
+        Result = XilSdnetTargetInit(
+            &p4sdnet_offload_ctx.target_ctx,
+            &p4sdnet_offload_ctx.env_if,
+            &(XilSdnetTargetConfig_sdnet_0));
+        if (Result != XIL_SDNET_SUCCESS)
+        {
+            return Result;
+        }
 
         /* Initialize table context pointers with random values */
         for (int i = 0; i < P4SDNET_GIGAFLOW_TABLE_MAX; i++)
+            Result = XilSdnetTargetGetTableByName(
+                &p4sdnet_offload_ctx.target_ctx,
+                p4sdnet_table_names[i],
+                &p4sdnet_offload_ctx.table_ctx_ptr[i]);
+        if (Result != XIL_SDNET_SUCCESS)
         {
-            p4sdnet_offload_ctx.table_ctx_ptr[i] = (XilSdnetTableCtx *)(0xDEADBEEF + i * 0x1000);
+            return Result;
         }
 
         /* Initialize action IDs with random values */
@@ -3216,46 +3313,27 @@ netdev_offload_p4sdnet_init_flow_api(struct netdev *netdev OVS_UNUSED)
         {
             for (int j = 0; j < P4SDNET_GIGAFLOW_ACTION_MAX; j++)
             {
-                p4sdnet_offload_ctx.action_id[i][j] = 0xCAFEBABE + (i * 100) + j;
+                Result = XilSdnetTableGetActionId(
+                    p4sdnet_offload_ctx.table_ctx_ptr[i],
+                    p4sdnet_action_names[j],
+                    &p4sdnet_offload_ctx.action_id[i][j]);
+                if (Result != XIL_SDNET_SUCCESS)
+                {
+                    return Result;
+                }
             }
         }
+
+        netdev_offload_p4sdnet_install_default_rules();
 
         /* p4sdnet flow api is available for use, no need to reinitialize */
         netdev_p4sdnet_set_flow_api_initialized();
     }
 
     return 0;
-#endif
+    // #endif
     return EOPNOTSUPP;
 }
-
-// static int
-// netdev_offload_p4sdnet_init_flow_api(struct netdev *netdev)
-// {
-//     //     XilSdnetReturnType status;
-//     //     VLOG_INFO("calling netdev_p4sdnet_offload_dpdk_init_flow_api()\n");
-//     //     if (netdev_p4sdnet_is_flow_api_initialized())
-//     //     {
-//     //         VLOG_INFO("netdev_p4sdnet_flow_api already initialized!\n");
-//     //         return 0;
-//     //     }
-
-// #ifdef HAVE_P4SDNET_OFFLOAD
-//     /* create the environment pointer */
-//     // status = NfpCreateEnvIf(&p4sdnet_offload_ctx.env_if,
-//     //                         P4_SDNET_BASE_ADDRESS, XILINX_FPGA_SYSFS_FILE);
-//     // VLOG_INFO("NfpCreateEnvIf() -> Result = %d\n", status);
-
-//     // if (status == XIL_SDNET_SUCCESS)
-//     // {
-//     //     netdev_p4sdnet_set_flow_api_initialized();
-//     //     return 0;
-//     // }
-//     netdev_p4sdnet_set_flow_api_initialized();
-//     return 0;
-// #endif
-//     return EOPNOTSUPP;
-// }
 
 static int
 netdev_offload_p4sdnet_uninit_flow_api(struct netdev *netdev)
