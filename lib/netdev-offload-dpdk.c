@@ -3272,12 +3272,14 @@ netdev_offload_p4sdnet_flow_put(struct netdev *netdev, struct match *match,
                                 const ovs_u128 *ufid, struct offload_info *info,
                                 struct dpif_flow_stats *stats)
 {
+    VLOG_INFO("calling netdev_offload_p4sdnet_flow_put()\n");
     return 0;
 }
 
 static int
 netdev_offload_p4sdnet_flow_del(struct netdev *netdev, const ovs_u128 *ufid)
 {
+    VLOG_INFO("calling netdev_offload_p4sdnet_flow_del()\n");
     return 0;
 }
 
@@ -3329,8 +3331,8 @@ const struct netdev_flow_api netdev_offload_dpdk_p4sdnet = {
     // .init_flow_api = netdev_offload_dpdk_init_flow_api,
     .init_flow_api = netdev_offload_p4sdnet_init_flow_api,
     .uninit_flow_api = netdev_offload_p4sdnet_uninit_flow_api,
-    // .flow_get = netdev_offload_p4sdnet_flow_get,
-    // .flow_flush = netdev_offload_p4sdnet_flow_flush,
-    // .hw_miss_packet_recover = netdev_offload_p4sdnet_hw_miss_packet_recover,
-    // .flow_get_n_flows = netdev_offload_p4sdnet_get_n_flows,
+    //     .flow_get = netdev_offload_p4sdnet_flow_get,
+    //     .flow_flush = netdev_offload_p4sdnet_flow_flush,
+    //     .hw_miss_packet_recover = netdev_offload_p4sdnet_hw_miss_packet_recover,
+    //     .flow_get_n_flows = netdev_offload_p4sdnet_get_n_flows,
 };

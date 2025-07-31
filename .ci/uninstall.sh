@@ -3,6 +3,11 @@
 sed -i '/export PATH=.*:\/usr\/local\/share\/openvswitch\/scripts/d' ~/.profile
 sed -i '/export PATH=.*:\/usr\/local\/share\/openvswitch\/scripts/d' /root/.profile
 
+sudo rm -rf /usr/local/sbin/ovs*
+sudo rm -rf /usr/local/bin/ovs*
+sudo rm -rf /usr/sbin/ovs*
+
+
 cd /tmp/gvs/ovs && make uninstall || true
 
 apt-get remove -y make cmake llvm-12 clang-12 meson ninja-build autotools-dev autoconf libtool systemtap-sdt-dev
