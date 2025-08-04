@@ -3299,16 +3299,93 @@ netdev_offload_p4sdnet_uninit_flow_api(struct netdev *netdev)
     }
 }
 
+/* prsdnet keys are little endian while match items are big endian*/
+static void
+ovs_flow_to_p4sdnet_key(struct match *match, uint8_t *entry_key)
+{
+    // TODO ask about this
+    /* byte 1 -> in_port */ // (0xFF & match->flow.in_port.odp_port);
+    // entry_key[P4SDNET_KEY_B1_IN_PORT_B0] = (uint8_t)NETFPGA_CMAC_0;
+
+    // TODO ask about this
+    entry_key[P4SDNET_KEY_B0_TABLE_TAG] = 0x00;
+
+    memcpy(&entry_key[P4SDNET_KEY_B1_ETH_SRC_B0], &match->flow.dl_src, ETH_ADDR_LEN);
+
+    memcpy(&entry_key[P4SDNET_KEY_B7_ETH_DST_B0], &match->flow.dl_dst, ETH_ADDR_LEN);
+
+    entry_key[P4SDNET_KEY_B13_ETH_TYPE_B0] = (0xFF & match->flow.dl_type);
+    entry_key[P4SDNET_KEY_B14_ETH_TYPE_B1] = (0xFF & (match->flow.dl_type >> 8));
+
+    entry_key[P4SDNET_KEY_B15_NW_SRC_B0] = (0xFF & (match->flow.nw_src));
+    entry_key[P4SDNET_KEY_B16_NW_SRC_B1] = (0xFF & (match->flow.nw_src >> 8));
+    entry_key[P4SDNET_KEY_B17_NW_SRC_B2] = (0xFF & (match->flow.nw_src >> 16));
+    entry_key[P4SDNET_KEY_B18_NW_SRC_B3] = (0xFF & (match->flow.nw_src >> 24));
+
+    entry_key[P4SDNET_KEY_B19_NW_DST_B0] = (0xFF & (match->flow.nw_dst));
+    entry_key[P4SDNET_KEY_B20_NW_DST_B1] = (0xFF & (match->flow.nw_dst >> 8));
+    entry_key[P4SDNET_KEY_B21_NW_DST_B2] = (0xFF & (match->flow.nw_dst >> 16));
+    entry_key[P4SDNET_KEY_B22_NW_DST_B3] = (0xFF & (match->flow.nw_dst >> 24));
+
+    entry_key[P4SDNET_KEY_B23_NW_PROTO_B0] = match->flow.nw_proto;
+
+    entry_key[P4SDNET_KEY_B24_TOS_B0] = match->flow.nw_tos;
+
+    entry_key[P4SDNET_KEY_B25_TP_SRC_B0] = (0xFF & match->flow.tp_src);
+    entry_key[P4SDNET_KEY_B26_TP_SRC_B1] = (0xFF & (match->flow.tp_src >> 8));
+
+    entry_key[P4SDNET_KEY_B27_TP_DST_B0] = (0xFF & match->flow.tp_dst);
+    entry_key[P4SDNET_KEY_B28_TP_DST_B1] = (0xFF & (match->flow.tp_dst >> 8));
+}
+
+static void
+ovs_mask_to_p4sdnet_mask(struct match *match, uint8_t *entry_mask)
+{
+    // TODO ask about this
+    /* byte 1 -> in_port */ // (0xFF & match->flow.in_port.odp_port);
+    // entry_key[P4SDNET_KEY_B1_IN_PORT_B0] = (uint8_t)NETFPGA_CMAC_0;
+
+    // TODO ask about this
+    entry_mask[P4SDNET_KEY_B0_TABLE_TAG] = 0xff;
+
+    memcpy(&entry_mask[P4SDNET_KEY_B1_ETH_SRC_B0], &match->flow.dl_src, ETH_ADDR_LEN);
+
+    memcpy(&entry_mask[P4SDNET_KEY_B7_ETH_DST_B0], &match->flow.dl_dst, ETH_ADDR_LEN);
+
+    entry_mask[P4SDNET_KEY_B13_ETH_TYPE_B0] = (0xFF & match->flow.dl_type);
+    entry_mask[P4SDNET_KEY_B14_ETH_TYPE_B1] = (0xFF & (match->flow.dl_type >> 8));
+
+    entry_mask[P4SDNET_KEY_B15_NW_SRC_B0] = (0xFF & (match->flow.nw_src));
+    entry_mask[P4SDNET_KEY_B16_NW_SRC_B1] = (0xFF & (match->flow.nw_src >> 8));
+    entry_mask[P4SDNET_KEY_B17_NW_SRC_B2] = (0xFF & (match->flow.nw_src >> 16));
+    entry_mask[P4SDNET_KEY_B18_NW_SRC_B3] = (0xFF & (match->flow.nw_src >> 24));
+
+    entry_mask[P4SDNET_KEY_B19_NW_DST_B0] = (0xFF & (match->flow.nw_dst));
+    entry_mask[P4SDNET_KEY_B20_NW_DST_B1] = (0xFF & (match->flow.nw_dst >> 8));
+    entry_mask[P4SDNET_KEY_B21_NW_DST_B2] = (0xFF & (match->flow.nw_dst >> 16));
+    entry_mask[P4SDNET_KEY_B22_NW_DST_B3] = (0xFF & (match->flow.nw_dst >> 24));
+
+    entry_mask[P4SDNET_KEY_B23_NW_PROTO_B0] = match->flow.nw_proto;
+
+    entry_mask[P4SDNET_KEY_B24_TOS_B0] = match->flow.nw_tos;
+
+    entry_mask[P4SDNET_KEY_B25_TP_SRC_B0] = (0xFF & match->flow.tp_src);
+    entry_mask[P4SDNET_KEY_B26_TP_SRC_B1] = (0xFF & (match->flow.tp_src >> 8));
+
+    entry_mask[P4SDNET_KEY_B27_TP_DST_B0] = (0xFF & match->flow.tp_dst);
+    entry_mask[P4SDNET_KEY_B28_TP_DST_B1] = (0xFF & (match->flow.tp_dst >> 8));
+}
+
 static void
 ovs_match_to_p4sdnet_match(struct match *match, uint8_t *entry_key,
                            uint8_t *entry_mask, uint8_t *entry_table_id)
 {
     *entry_table_id = match->table_id;
-    // ovs_flow_to_p4sdnet_key(match, entry_key);
-    // ovs_mask_to_p4sdnet_mask(match, entry_mask);
 
     if (memcmp(match->flow.dl_dst.ea, eth_addr_zero.ea, 6))
         VLOG_INFO("dl_dst not zero\n");
+    ovs_flow_to_p4sdnet_key(match, entry_key);
+    ovs_mask_to_p4sdnet_mask(match, entry_mask);
 }
 
 static void
