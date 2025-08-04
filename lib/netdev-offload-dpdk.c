@@ -45,11 +45,11 @@ static struct vlog_rate_limit rl = VLOG_RATE_LIMIT_INIT(600, 600);
 /* Gigaflow P4SDNet key lengths */
 #define GIGAFLOW_KEY_LEN 29
 #define GIGAFLOW_ACTION_LEN 2
-// #define GIGAFLOW_LOW_PRIORITY 1000
-// #define GIGAFLOW_STANDARD_PRIORITY 100
-#define GIGAFLOW_DEFAULT_PRIORITY 0xff
-#define GIGAFLOW_LOW_PRIORITY 0x6a
-#define GIGAFLOW_STANDARD_PRIORITY 0x0a
+#define GIGAFLOW_LOW_PRIORITY 1000
+#define GIGAFLOW_STANDARD_PRIORITY 100
+#define GIGAFLOW_OFFLOAD_DEFAULT_PRIORITY 0xff
+#define GIGAFLOW_OFFLOAD_LOW_PRIORITY 0x6a
+#define GIGAFLOW_OFFLOAD_STANDARD_PRIORITY 0x0a
 #define NETFPGA_CMAC_0 0x01
 #define NETFPGA_CMAC_1 0x04
 #define NETFPGA_QDMA_0 0x02
@@ -3195,15 +3195,13 @@ netdev_offload_p4sdnet_install_default_rules()
     VLOG_INFO("calling netdev_offload_p4sdnet_install_default_rules()\n");
     uint8_t defaultKeyArray[GIGAFLOW_KEY_LEN];
     uint8_t defaultMaskArray[GIGAFLOW_KEY_LEN];
+    uint32_t defaultPriority = GIGAFLOW_OFFLOAD_DEFAULT_PRIORITY;
+    uint32_t defaultActionID = P4SDNET_FORWARD_ACTION;
+    uint8_t defaultActionParamsArray[GIGAFLOW_ACTION_LEN] = {0x00, 0x02};
 
     memset(defaultKeyArray, 0, GIGAFLOW_KEY_LEN);
     memset(defaultMaskArray, 0, GIGAFLOW_KEY_LEN);
     defaultMaskArray[P4SDNET_KEY_B0_TABLE_TAG] = 0xff;
-
-    uint32_t defaultPriority = GIGAFLOW_DEFAULT_PRIORITY;
-    uint32_t defaultActionID = P4SDNET_FORWARD_ACTION;
-
-    uint8_t defaultActionParamsArray[GIGAFLOW_ACTION_LEN] = {0x00, 0x02};
     XilSdnetReturnType Result;
 
     Result = XilSdnetTableInsert(
@@ -3301,6 +3299,26 @@ netdev_offload_p4sdnet_uninit_flow_api(struct netdev *netdev)
     }
 }
 
+static void
+ovs_match_to_p4sdnet_match(struct match *match, uint8_t *entry_key,
+                           uint8_t *entry_mask, uint8_t *entry_table_id)
+{
+    *entry_table_id = match->table_id;
+    // ovs_flow_to_p4sdnet_key(match, entry_key);
+    // ovs_mask_to_p4sdnet_mask(match, entry_mask);
+
+    if (memcmp(match->flow.dl_dst.ea, eth_addr_zero.ea, 6))
+        VLOG_INFO("dl_dst not zero\n");
+}
+
+static void
+ovs_action_to_p4sdnet_action(struct nlattr *actions, size_t actions_len,
+                             uint8_t *entry_action_params,
+                             uint32_t *entry_action_id,
+                             uint8_t entry_table_id)
+{
+}
+
 static int
 netdev_offload_p4sdnet_flow_put(struct netdev *netdev, struct match *match,
                                 struct nlattr *actions, size_t actions_len,
@@ -3308,7 +3326,26 @@ netdev_offload_p4sdnet_flow_put(struct netdev *netdev, struct match *match,
                                 struct dpif_flow_stats *stats)
 {
     VLOG_INFO("calling netdev_offload_p4sdnet_flow_put()\n");
+
+    // #ifdef HAVE_P4SDNET_OFFLOAD
+    uint8_t entry_key[P4SDNET_GIGAFLOW_KEY_BYTES_MAX];
+    uint8_t entry_mask[P4SDNET_GIGAFLOW_KEY_BYTES_MAX];
+    uint8_t entry_action_params[P4SDNET_ACTION_PARAM_BYTES_MAX];
+    uint32_t entry_priority = GIGAFLOW_OFFLOAD_STANDARD_PRIORITY;
+    uint32_t entry_action_id;
+    uint8_t entry_table_id;
+
+    memset(entry_key, 0, sizeof(entry_key));
+    memset(entry_mask, 0, sizeof(entry_mask));
+    XilSdnetReturnType Result;
+
+    ovs_match_to_p4sdnet_match(match, entry_key, entry_mask, &entry_table_id);
+    ovs_action_to_p4sdnet_action(actions, actions_len, entry_action_params,
+                                 &entry_action_id, entry_table_id);
+
     return 0;
+    // #endif
+    return EOPNOTSUPP;
 }
 
 static int
