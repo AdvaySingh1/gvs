@@ -32,8 +32,11 @@ ovs-vsctl --if-exists del-br br0
 ovs-vsctl add-br br0
 ovs-vsctl set bridge br0 datapath_type=netdev
 ovs-vsctl set bridge br0 fail-mode=secure
-ovs-vsctl add-port br0 p1
-ovs-vsctl add-port br0 p2
+# ovs-vsctl add-port br0 p1
+# ovs-vsctl add-port br0 p2
+
+ovs-vsctl add-port br0 ens16f0
+ovs-vsctl add-port br0 ens16f1
 
 
 # Variables (edit as needed)

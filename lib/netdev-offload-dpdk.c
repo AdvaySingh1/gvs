@@ -122,48 +122,57 @@ static char *p4sdnet_action_names[] = {
 };
 
 /* P4SDNet key bytes for Gigaflow offload
-   tos=ff, in_port=ff, eth_src=0x000000000000, eth_dst=0x000000000000,
-   eth_type=0x0000, nw_src=0x00000000, nw_dst=0x00000000, nw_proto=0x00,
-   tp_src=0x0000, tp_dst=0x0000 */
+   table_tag=0x00, eth_src=0x000000000000, eth_dst=0x000000000001,
+   eth_type=0x0000, ipv4_src=0x00000000, ipv4_dst=0x00000000,
+   ipv4_proto=0x00, ipv4_tos=0x00, tp_src=0x0000, tp_dst=0x0000 */
 enum p4sdnet_key_bytes
 {
+    // Table tag
+    P4SDNET_KEY_B0_TABLE_TAG,
 
-    P4SDNET_KEY_B0_TOS_B0,
+    // eth.src
+    P4SDNET_KEY_B1_ETH_SRC_B0,
+    P4SDNET_KEY_B2_ETH_SRC_B1,
+    P4SDNET_KEY_B3_ETH_SRC_B2,
+    P4SDNET_KEY_B4_ETH_SRC_B3,
+    P4SDNET_KEY_B5_ETH_SRC_B4,
+    P4SDNET_KEY_B6_ETH_SRC_B5,
 
-    P4SDNET_KEY_B1_IN_PORT_B0,
+    // eth.dst
+    P4SDNET_KEY_B7_ETH_DST_B0,
+    P4SDNET_KEY_B8_ETH_DST_B1,
+    P4SDNET_KEY_B9_ETH_DST_B2,
+    P4SDNET_KEY_B10_ETH_DST_B3,
+    P4SDNET_KEY_B11_ETH_DST_B4,
+    P4SDNET_KEY_B12_ETH_DST_B5,
 
-    P4SDNET_KEY_B2_ETH_SRC_B0,
-    P4SDNET_KEY_B3_ETH_SRC_B1,
-    P4SDNET_KEY_B4_ETH_SRC_B2,
-    P4SDNET_KEY_B5_ETH_SRC_B3,
-    P4SDNET_KEY_B6_ETH_SRC_B4,
-    P4SDNET_KEY_B7_ETH_SRC_B5,
+    // eth.type
+    P4SDNET_KEY_B13_ETH_TYPE_B0,
+    P4SDNET_KEY_B14_ETH_TYPE_B1,
 
-    P4SDNET_KEY_B8_ETH_DST_B0,
-    P4SDNET_KEY_B9_ETH_DST_B1,
-    P4SDNET_KEY_B10_ETH_DST_B2,
-    P4SDNET_KEY_B11_ETH_DST_B3,
-    P4SDNET_KEY_B12_ETH_DST_B4,
-    P4SDNET_KEY_B13_ETH_DST_B5,
+    // ipv4.src
+    P4SDNET_KEY_B15_NW_SRC_B0,
+    P4SDNET_KEY_B16_NW_SRC_B1,
+    P4SDNET_KEY_B17_NW_SRC_B2,
+    P4SDNET_KEY_B18_NW_SRC_B3,
 
-    P4SDNET_KEY_B14_ETH_TYPE_B0,
-    P4SDNET_KEY_B15_ETH_TYPE_B1,
+    // ipv4.dst
+    P4SDNET_KEY_B19_NW_DST_B0,
+    P4SDNET_KEY_B20_NW_DST_B1,
+    P4SDNET_KEY_B21_NW_DST_B2,
+    P4SDNET_KEY_B22_NW_DST_B3,
 
-    P4SDNET_KEY_B16_NW_SRC_B0,
-    P4SDNET_KEY_B17_NW_SRC_B1,
-    P4SDNET_KEY_B18_NW_SRC_B2,
-    P4SDNET_KEY_B19_NW_SRC_B3,
+    // ipv4.protocol
+    P4SDNET_KEY_B23_NW_PROTO_B0,
 
-    P4SDNET_KEY_B20_NW_DST_B0,
-    P4SDNET_KEY_B21_NW_DST_B1,
-    P4SDNET_KEY_B22_NW_DST_B2,
-    P4SDNET_KEY_B23_NW_DST_B3,
+    // ipv4.tos
+    P4SDNET_KEY_B24_TOS_B0,
 
-    P4SDNET_KEY_B24_NW_PROTO_B0,
-
+    // sport
     P4SDNET_KEY_B25_TP_SRC_B0,
     P4SDNET_KEY_B26_TP_SRC_B1,
 
+    // dport
     P4SDNET_KEY_B27_TP_DST_B0,
     P4SDNET_KEY_B28_TP_DST_B1,
 
@@ -3181,86 +3190,31 @@ static int
 netdev_offload_p4sdnet_install_default_rules()
 {
     VLOG_INFO("calling netdev_offload_p4sdnet_install_default_rules()\n");
-    uint32_t ForwardActionId, SetTableTagActionId;
-    uint8_t giga_sampleKeyArray[GIGAFLOW_KEY_LEN] = {
-        0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00,
-        0x00,
-        0x00,
-        0x00, 0x00,
-        0x00, 0x00};
-
-    // Fixed mask arrays - only ipv4.dst is exact match (0xff), others are don't care (0x00)
-    uint8_t giga_sampleMaskArray[GIGAFLOW_KEY_LEN] = {
-        0xff,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00,
-        0x00,
-        0x00,
-        0x00, 0x00,
-        0x00, 0x00};
-    uint8_t giga_sampleActionParamsArray_G0[GIGAFLOW_ACTION_LEN] = {0x00, 0x00};
-    uint8_t giga_sampleActionParamsArray_G1[GIGAFLOW_ACTION_LEN] = {0x00, 0x00};
-    uint8_t giga_sampleActionParamsArray_G2[GIGAFLOW_ACTION_LEN] = {0x00, 0x00};
-    uint8_t giga_sampleActionParamsArray_G3[GIGAFLOW_ACTION_LEN] = {0x00, 0x02};
+    uint32_t ForwardActionId;
+    uint8_t giga_sampleKeyArray[GIGAFLOW_KEY_LEN];
+    uint8_t giga_sampleMaskArray[GIGAFLOW_KEY_LEN];
+    memset(giga_sampleKeyArray, 0, GIGAFLOW_KEY_LEN);
+    memset(giga_sampleMaskArray, 0, GIGAFLOW_KEY_LEN);
+    giga_sampleMaskArray[P4SDNET_KEY_B0_TABLE_TAG] = 0xff;
+    uint8_t giga_sampleActionParamsArray_G0[GIGAFLOW_ACTION_LEN] = {0x00, 0x02};
     uint32_t giga_samplePriority = 0x00;
-    const int numTables = 4;
-    uint8_t *actionParamsArrays[] = {
-        (uint8_t *)giga_sampleActionParamsArray_G0,
-        (uint8_t *)giga_sampleActionParamsArray_G1,
-        (uint8_t *)giga_sampleActionParamsArray_G2,
-        (uint8_t *)giga_sampleActionParamsArray_G3};
     XilSdnetReturnType Result;
-    // Configure all 4 tables with different actions
-    for (int tableIndex = 0; tableIndex < numTables; tableIndex++)
+    Result = XilSdnetTableGetActionId(p4sdnet_offload_ctx.table_ctx_ptr[0], "forwardPacket", &ForwardActionId);
+    if (Result != XIL_SDNET_SUCCESS)
     {
-        Result = XilSdnetTableGetActionId(p4sdnet_offload_ctx.table_ctx_ptr[tableIndex], "forwardPacket", &ForwardActionId);
-        if (Result != XIL_SDNET_SUCCESS)
-        {
-            return Result;
-        }
-        Result = XilSdnetTableGetActionId(p4sdnet_offload_ctx.table_ctx_ptr[tableIndex], "set_table_tag", &SetTableTagActionId);
-        if (Result != XIL_SDNET_SUCCESS)
-        {
-            return Result;
-        }
-
-        // Determine action and parameters based on table
-        uint32_t CurrentActionId;
-        uint8_t *currentActionParams;
-
-        if (tableIndex < 3)
-        {
-            // First 3 tables (G0, G1, G2) use set_table_tag action
-            CurrentActionId = SetTableTagActionId;
-            currentActionParams = actionParamsArrays[tableIndex];
-        }
-        else
-        {
-            // Last table (G3) uses forwardPacket action
-            CurrentActionId = ForwardActionId;
-            currentActionParams = actionParamsArrays[tableIndex];
-        }
-        Result = XilSdnetTableInsert(p4sdnet_offload_ctx.table_ctx_ptr[tableIndex],
-                                     giga_sampleKeyArray,
-                                     giga_sampleMaskArray,
-                                     giga_samplePriority,
-                                     CurrentActionId,
-                                     currentActionParams);
-        if (Result != XIL_SDNET_SUCCESS)
-        {
-            return Result;
-        }
+        return Result;
     }
-
-    printf("\n=== Default Rule: Forward To CPU Initialized");
+    Result = XilSdnetTableInsert(p4sdnet_offload_ctx.table_ctx_ptr[0],
+                                 giga_sampleKeyArray,
+                                 giga_sampleMaskArray,
+                                 giga_samplePriority,
+                                 ForwardActionId,
+                                 giga_sampleActionParamsArray_G0);
+    if (Result != XIL_SDNET_SUCCESS)
+    {
+        return Result;
+    }
+    printf("Default Rule: Forward To CPU Initialized\n");
     return XIL_SDNET_SUCCESS;
 }
 
