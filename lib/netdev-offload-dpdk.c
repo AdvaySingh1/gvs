@@ -3190,26 +3190,23 @@ static int
 netdev_offload_p4sdnet_install_default_rules()
 {
     VLOG_INFO("calling netdev_offload_p4sdnet_install_default_rules()\n");
-    uint32_t ForwardActionId;
-    uint8_t giga_sampleKeyArray[GIGAFLOW_KEY_LEN];
-    uint8_t giga_sampleMaskArray[GIGAFLOW_KEY_LEN];
-    memset(giga_sampleKeyArray, 0, GIGAFLOW_KEY_LEN);
-    memset(giga_sampleMaskArray, 0, GIGAFLOW_KEY_LEN);
-    giga_sampleMaskArray[P4SDNET_KEY_B0_TABLE_TAG] = 0xff;
-    uint8_t giga_sampleActionParamsArray_G0[GIGAFLOW_ACTION_LEN] = {0x00, 0x02};
-    uint32_t giga_samplePriority = 0x00;
+    uint8_t defaultKeyArray[GIGAFLOW_KEY_LEN];
+    uint8_t defaultMaskArray[GIGAFLOW_KEY_LEN];
+
+    memset(defaultKeyArray, 0, GIGAFLOW_KEY_LEN);
+    memset(defaultMaskArray, 0, GIGAFLOW_KEY_LEN);
+    defaultMaskArray[P4SDNET_KEY_B0_TABLE_TAG] = 0xff;
+
+    uint8_t defaultActionParamsArray[GIGAFLOW_ACTION_LEN] = {0x00, 0x02};
+    uint32_t defaultPriority = 0x00;
     XilSdnetReturnType Result;
-    Result = XilSdnetTableGetActionId(p4sdnet_offload_ctx.table_ctx_ptr[0], "forwardPacket", &ForwardActionId);
-    if (Result != XIL_SDNET_SUCCESS)
-    {
-        return Result;
-    }
+
     Result = XilSdnetTableInsert(p4sdnet_offload_ctx.table_ctx_ptr[0],
-                                 giga_sampleKeyArray,
-                                 giga_sampleMaskArray,
-                                 giga_samplePriority,
-                                 ForwardActionId,
-                                 giga_sampleActionParamsArray_G0);
+                                 defaultKeyArray,
+                                 defaultMaskArray,
+                                 defaultPriority,
+                                 P4SDNET_FORWARD_ACTION,
+                                 defaultActionParamsArray);
     if (Result != XIL_SDNET_SUCCESS)
     {
         return Result;
