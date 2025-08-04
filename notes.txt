@@ -227,7 +227,7 @@ Error due to flow_put
 
 
 RULES
-
+MATCHES
 Key 1 for Gigaflow table 1:
     {
         // Entry 1 mask
@@ -375,25 +375,25 @@ Mask 1 for Gigaflow table 2:
 Key 2 for Gigaflow table 2:
     {
         // Entry 1 mask
-        0x04,
+        0xff,
         // eth.src
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x04,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         // eth.dst
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         // eth.type
         0x00, 0x00,
         // ipv4.src
-        0x00, 0x00, 0x00, 0x04,
+        0xff, 0xff, 0xff, 0xff,
         // ipv4.dst
-        0x00, 0x00, 0x00, 0x02,
+        0xff, 0xff, 0xff, 0xff,
         // ipv4.protocol
-        0x11,
+        0xff,
         // ipv4.tos
         0x00,
         // table_key_sport
-        0x00, 0x04,
+        0xff, 0xff,
         // table_key_dport
-        0x00, 0x02
+        0xff, 0xff
     }
 Mask 2 for Gigaflow table 2:
     {
@@ -419,10 +419,14 @@ Mask 2 for Gigaflow table 2:
         0xff, 0xff
     }
 
+ACTIONS
+Action for key 1 match on Gigaflow table 1: Set table tag 4
+Action for key 2 match on Gigaflow table 1: Set table tag 4
+Action for key 1 match on Gigaflow table 2: Set table tag 255 and forward to port CMAC 1
+Action for key 2 match on Gigaflow table 1: Set table tag 255 and forward to port CMAC 2
 
 
-
-Packets:
+PACKETS
 Packet 1 should match with key 1 on tables 1 and 2:
     {
         // eth.src

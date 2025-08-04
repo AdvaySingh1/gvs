@@ -45,8 +45,11 @@ static struct vlog_rate_limit rl = VLOG_RATE_LIMIT_INIT(600, 600);
 /* Gigaflow P4SDNet key lengths */
 #define GIGAFLOW_KEY_LEN 29
 #define GIGAFLOW_ACTION_LEN 2
-#define GIGAFLOW_LOW_PRIORITY 1000
-#define GIGAFLOW_STANDARD_PRIORITY 100
+// #define GIGAFLOW_LOW_PRIORITY 1000
+// #define GIGAFLOW_STANDARD_PRIORITY 100
+#define GIGAFLOW_DEFAULT_PRIORITY 0xff
+#define GIGAFLOW_LOW_PRIORITY 0x6a
+#define GIGAFLOW_STANDARD_PRIORITY 0x0a
 #define NETFPGA_CMAC_0 0x01
 #define NETFPGA_CMAC_1 0x04
 #define NETFPGA_QDMA_0 0x02
@@ -3197,16 +3200,19 @@ netdev_offload_p4sdnet_install_default_rules()
     memset(defaultMaskArray, 0, GIGAFLOW_KEY_LEN);
     defaultMaskArray[P4SDNET_KEY_B0_TABLE_TAG] = 0xff;
 
+    uint32_t defaultPriority = GIGAFLOW_DEFAULT_PRIORITY;
+    uint32_t defaultActionID = P4SDNET_FORWARD_ACTION;
+
     uint8_t defaultActionParamsArray[GIGAFLOW_ACTION_LEN] = {0x00, 0x02};
-    uint32_t defaultPriority = 0x00;
     XilSdnetReturnType Result;
 
-    Result = XilSdnetTableInsert(p4sdnet_offload_ctx.table_ctx_ptr[0],
-                                 defaultKeyArray,
-                                 defaultMaskArray,
-                                 defaultPriority,
-                                 P4SDNET_FORWARD_ACTION,
-                                 defaultActionParamsArray);
+    Result = XilSdnetTableInsert(
+        p4sdnet_offload_ctx.table_ctx_ptr[P4SDNET_GIGAFLOW_TABLE_0],
+        defaultKeyArray,
+        defaultMaskArray,
+        defaultPriority,
+        defaultActionID,
+        defaultActionParamsArray);
     if (Result != XIL_SDNET_SUCCESS)
     {
         return Result;
