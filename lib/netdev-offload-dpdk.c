@@ -112,6 +112,7 @@ enum p4sdnet_actions
     P4SDNET_DROP_ACTION,
     P4SDNET_INSERT_NEXT_TABLE_TAG_ACTION,
     P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION,
+    P4SDNET_NO_ACTION,
 
     P4SDNET_GIGAFLOW_ACTION_MAX
 };
@@ -3189,6 +3190,8 @@ const struct netdev_flow_api netdev_offload_dpdk = {
     .flow_get_n_flows = netdev_offload_dpdk_get_n_flows,
 };
 
+// TODO:
+
 static int
 netdev_offload_p4sdnet_install_default_rules()
 {
@@ -3385,15 +3388,239 @@ ovs_match_to_p4sdnet_match(struct match *match, uint8_t *entry_key,
     ovs_mask_to_p4sdnet_mask(match, entry_mask);
 }
 
-static void
+// static void
+// ovs_action_to_p4sdnet_action(struct nlattr *actions, size_t actions_len,
+//                              uint8_t *entry_action_params,
+//                              uint32_t *entry_action_id,
+//                              uint8_t entry_table_id)
+// {
+//     // entry_action_params[0] = 0x00;
+//     // entry_action_params[1] = 0x04;
+//     // *entry_action_id = P4SDNET_FORWARD_ACTION;
+
+//     const struct nlattr *a;
+//     unsigned int left;
+//     int prev_action = (int)P4SDNET_NO_ACTION;
+//     bool found_terminating_action = false;
+
+//     NL_ATTR_FOR_EACH_UNSAFE(a, left, actions, actions_len)
+//     {
+//         int type = nl_attr_type(a);
+
+//         switch ((enum ovs_action_attr)type)
+//         {
+//         case OVS_ACTION_ATTR_UNSPEC:
+//         case OVS_ACTION_ATTR_OUTPUT:
+//         case OVS_ACTION_ATTR_USERSPACE:
+//         case OVS_ACTION_ATTR_SET:
+//         case OVS_ACTION_ATTR_PUSH_VLAN:
+//         case OVS_ACTION_ATTR_POP_VLAN:
+//         case OVS_ACTION_ATTR_SAMPLE:
+//         case OVS_ACTION_ATTR_RECIRC:
+//         case OVS_ACTION_ATTR_HASH:
+//         case OVS_ACTION_ATTR_PUSH_MPLS:
+//         case OVS_ACTION_ATTR_POP_MPLS:
+//         case OVS_ACTION_ATTR_SET_MASKED:
+//         case OVS_ACTION_ATTR_CT:
+//         case OVS_ACTION_ATTR_TRUNC:
+//         case OVS_ACTION_ATTR_PUSH_ETH:
+//         case OVS_ACTION_ATTR_POP_ETH:
+//         case OVS_ACTION_ATTR_CT_CLEAR:
+//         case OVS_ACTION_ATTR_PUSH_NSH:
+//         case OVS_ACTION_ATTR_POP_NSH:
+//         case OVS_ACTION_ATTR_METER:
+//         case OVS_ACTION_ATTR_CLONE:
+//         case OVS_ACTION_ATTR_CHECK_PKT_LEN:
+//         case OVS_ACTION_ATTR_ADD_MPLS:
+//         case OVS_ACTION_ATTR_TUNNEL_PUSH:
+//         case OVS_ACTION_ATTR_TUNNEL_POP:
+//         case OVS_ACTION_ATTR_DROP:
+//         case OVS_ACTION_ATTR_LB_OUTPUT:
+//         case __OVS_ACTION_ATTR_MAX:
+//         {
+//             VLOG_INFO("[SDNET] unsupported gigaflow action type: %d\n", type);
+//             // OVS_NOT_REACHED();
+//             /* first and last action is drop */
+//             *entry_action_id =
+//                 p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_DROP_ACTION];
+//             entry_action_params[P4SDNET_ACTION_PARAM_B0] = 0x00;
+//             entry_action_params[P4SDNET_ACTION_PARAM_B1] = 0x00;
+//             // prev_action = P4SDNET_DROP_ACTION;
+//             break;
+//         }
+//         }
+//         if (found_terminating_action)
+//         {
+//             break;
+//         }
+//     }
+// }
+
+static uint8_t
+ovs_nl_attr_to_p4sdnet_port(const struct nlattr *odp_port)
+{
+    // TODO check
+    uint8_t odp_port = (uint8_t)nl_attr_get_odp_port(odp_port);
+    uint8_t p4sdnet_port = 0;
+    switch ((uint32_t)odp_port)
+    {
+    case 0:
+        p4sdnet_port = NETFPGA_CMAC_0;
+        break;
+    case 1:
+        p4sdnet_port = NETFPGA_CMAC_1;
+        break;
+    default:
+        break;
+    }
+    return p4sdnet_port;
+}
+
+static uint8_t
+ovs_nl_attr_to_p4sdnet_table_tag(const struct nlattr *table_tag)
+{
+    // TODO check
+    return nl_attr_get_u8(table_tag);
+}
+
+static int
 ovs_action_to_p4sdnet_action(struct nlattr *actions, size_t actions_len,
                              uint8_t *entry_action_params,
                              uint32_t *entry_action_id,
                              uint8_t entry_table_id)
 {
-    entry_action_params[0] = 0x00;
-    entry_action_params[1] = 0x04;
-    *entry_action_id = P4SDNET_FORWARD_ACTION;
+    // entry_action_params[1] = 0x04;
+    // *entry_action_id = P4SDNET_FORWARD_ACTION;
+    *entry_action_id =
+        p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_DROP_ACTION];
+    const struct nlattr *a;
+    unsigned int left;
+    int prev_action = (int)P4SDNET_NO_ACTION;
+    bool found_terminating_action = false;
+
+    NL_ATTR_FOR_EACH_UNSAFE(a, left, actions, actions_len)
+    {
+        int type = nl_attr_type(a);
+
+        switch ((enum ovs_action_attr)type)
+        {
+        case OVS_ACTION_ATTR_OUTPUT:
+        {
+            /*
+            TODO: determine approach
+            */
+
+            /*
+            Approach one: only set the table tag to 255 if it's the previous action
+            */
+            if (prev_action == P4SDNET_NO_ACTION)
+            {
+                *entry_action_id =
+                    p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_FORWARD_ACTION];
+                prev_action = P4SDNET_FORWARD_ACTION;
+                entry_action_params[P4SDNET_ACTION_PARAM_B1] = ovs_nl_attr_to_p4sdnet_port(a);
+            }
+            else if (prev_action == P4SDNET_INSERT_NEXT_TABLE_TAG_ACTION)
+            {
+                *entry_action_id =
+                    p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION];
+                prev_action = P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION;
+                entry_action_params[P4SDNET_ACTION_PARAM_B0] = 0xff;
+                entry_action_params[P4SDNET_ACTION_PARAM_B1] = ovs_nl_attr_to_p4sdnet_port(a);
+            }
+            else
+            {
+                VLOG_INFO("unsupported gigaflow action sequence: %d -> %d\n",
+                          prev_action, P4SDNET_FORWARD_ACTION);
+                return EOPNOTSUPP;
+            }
+            found_terminating_action = true;
+            break;
+
+            /*
+            Approach two: regardless of what the previous action was, we should SET_NEXT_TABLE_TAG
+            to 255 before forwarding
+            */
+            // *entry_action_id =
+            //     p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION];
+            // prev_action = P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION;
+            // entry_action_params[P4SDNET_ACTION_PARAM_B0] = 0xff;
+            // entry_action_params[P4SDNET_ACTION_PARAM_B1] = ovs_nl_attr_to_p4sdnet_port(a);
+            // found_terminating_action = true;
+            // break;
+        }
+        case OVS_ACTION_ATTR_SET_MASKED:
+        {
+            if (prev_action == P4SDNET_NO_ACTION)
+            {
+                *entry_action_id =
+                    p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_ACTION];
+                entry_action_params[P4SDNET_ACTION_PARAM_B1] = ovs_nl_attr_to_p4sdnet_table_tag(a);
+                prev_action = P4SDNET_INSERT_NEXT_TABLE_TAG_ACTION;
+            }
+            else
+            {
+                VLOG_INFO("unsupported gigaflow action sequence: %d -> %d\n",
+                          prev_action, P4SDNET_INSERT_NEXT_TABLE_TAG_ACTION);
+                return EOPNOTSUPP;
+            }
+            break;
+        }
+        case OVS_ACTION_ATTR_DROP:
+        {
+            // TODO will this drop? Since the table tag is not set to 254 or 255, the packet will be forwarded to the next table
+            // however, smeta.drop will be set to 1.
+            // Other approahces include setting table tag to 254, clearning the action_id (no action) and turning on found_terminating
+            // Or introducing a DROP_AND_SetTableTag action
+            *entry_action_id =
+                p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_DROP_ACTION];
+            prev_action = P4SDNET_DROP_ACTION;
+            found_terminating_action = true;
+            break;
+        }
+        case OVS_ACTION_ATTR_UNSPEC:
+        case OVS_ACTION_ATTR_USERSPACE:
+        case OVS_ACTION_ATTR_SET:
+        case OVS_ACTION_ATTR_PUSH_VLAN:
+        case OVS_ACTION_ATTR_POP_VLAN:
+        case OVS_ACTION_ATTR_SAMPLE:
+        case OVS_ACTION_ATTR_RECIRC:
+        case OVS_ACTION_ATTR_HASH:
+        case OVS_ACTION_ATTR_PUSH_MPLS:
+        case OVS_ACTION_ATTR_POP_MPLS:
+        case OVS_ACTION_ATTR_CT:
+        case OVS_ACTION_ATTR_TRUNC:
+        case OVS_ACTION_ATTR_PUSH_ETH:
+        case OVS_ACTION_ATTR_POP_ETH:
+        case OVS_ACTION_ATTR_CT_CLEAR:
+        case OVS_ACTION_ATTR_PUSH_NSH:
+        case OVS_ACTION_ATTR_POP_NSH:
+        case OVS_ACTION_ATTR_METER:
+        case OVS_ACTION_ATTR_CLONE:
+        case OVS_ACTION_ATTR_CHECK_PKT_LEN:
+        case OVS_ACTION_ATTR_ADD_MPLS:
+        case OVS_ACTION_ATTR_TUNNEL_PUSH:
+        case OVS_ACTION_ATTR_TUNNEL_POP:
+        case OVS_ACTION_ATTR_LB_OUTPUT:
+        case __OVS_ACTION_ATTR_MAX:
+        {
+            VLOG_INFO("[SDNET] unsupported gigaflow action type: %d\n", type);
+            // OVS_NOT_REACHED();
+            /* first and last action is drop */
+            *entry_action_id =
+                p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_DROP_ACTION];
+            entry_action_params[P4SDNET_ACTION_PARAM_B0] = 0x00;
+            entry_action_params[P4SDNET_ACTION_PARAM_B1] = 0x00;
+            // prev_action = P4SDNET_DROP_ACTION;
+            break;
+        }
+        }
+        if (found_terminating_action)
+        {
+            break;
+        }
+    }
+    return 0;
 }
 
 static int
@@ -3414,11 +3641,17 @@ netdev_offload_p4sdnet_flow_put(struct netdev *netdev, struct match *match,
 
     memset(entry_key, 0, sizeof(entry_key));
     memset(entry_mask, 0, sizeof(entry_mask));
+    memset(entry_action_params, 0, sizeof *entry_action_params);
     XilSdnetReturnType Result;
+    int ret = 0;
 
     ovs_match_to_p4sdnet_match(match, entry_key, entry_mask, &entry_table_id);
-    ovs_action_to_p4sdnet_action(actions, actions_len, entry_action_params,
-                                 &entry_action_id, entry_table_id);
+    ret = ovs_action_to_p4sdnet_action(actions, actions_len, entry_action_params,
+                                       &entry_action_id, entry_table_id);
+    if (ret)
+    {
+        return ret;
+    }
 
     Result = XilSdnetTableInsert(p4sdnet_offload_ctx.table_ctx_ptr[entry_table_id],
                                  entry_key, entry_mask, entry_priority,
@@ -3435,7 +3668,7 @@ netdev_offload_p4sdnet_flow_put(struct netdev *netdev, struct match *match,
         return EOPNOTSUPP;
     }
 
-    return 0;
+    return ret;
     // #endif
     return EOPNOTSUPP;
 }
