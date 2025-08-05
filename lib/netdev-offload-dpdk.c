@@ -3391,6 +3391,9 @@ ovs_action_to_p4sdnet_action(struct nlattr *actions, size_t actions_len,
                              uint32_t *entry_action_id,
                              uint8_t entry_table_id)
 {
+    entry_action_params[0] = 0x00;
+    entry_action_params[1] = 0x04;
+    *entry_action_id = P4SDNET_FORWARD_ACTION;
 }
 
 static int
@@ -3416,6 +3419,21 @@ netdev_offload_p4sdnet_flow_put(struct netdev *netdev, struct match *match,
     ovs_match_to_p4sdnet_match(match, entry_key, entry_mask, &entry_table_id);
     ovs_action_to_p4sdnet_action(actions, actions_len, entry_action_params,
                                  &entry_action_id, entry_table_id);
+
+    Result = XilSdnetTableInsert(p4sdnet_offload_ctx.table_ctx_ptr[entry_table_id],
+                                 entry_key, entry_mask, entry_priority,
+                                 entry_action_id, entry_action_params);
+
+    if (Result != 0)
+    {
+        VLOG_INFO("XilSdnetTableInsert(k=%d) -> status = %d\n", entry_table_id, Result);
+        VLOG_INFO("[write] failed in installing table entry [k=%d], action (%d) = "
+                  "%s(0x%02X, 0x%02X)\n",
+                  entry_table_id, entry_action_id,
+                  p4sdnet_action_names[entry_action_id],
+                  entry_action_params[0], entry_action_params[1]);
+        return EOPNOTSUPP;
+    }
 
     return 0;
     // #endif
