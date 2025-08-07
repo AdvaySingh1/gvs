@@ -32,25 +32,15 @@ ovs-vsctl --if-exists del-br br0
 ovs-vsctl add-br br0
 ovs-vsctl set bridge br0 datapath_type=netdev
 ovs-vsctl set bridge br0 fail-mode=secure
-# ovs-vsctl add-port br0 p1
-# ovs-vsctl add-port br0 p2
-
-ovs-vsctl add-port br0 ens16f0
-ovs-vsctl add-port br0 ens16f1
+ovs-vsctl add-port br0 p1
+ovs-vsctl add-port br0 p2
 
 
 # Variables (edit as needed)
 COLLECTOR_OVS_PATH="/tmp/gigaflow/logs/ee/high-locality/4-8000/cord-ofdpa"
-RULES_PATH="/home/advay/gigaflow/ovs-pipelines"
-RULESET="high-locality/cord/ofdpa/of2/10k/ruleset.ovs"
 
 sudo rm -rf "$COLLECTOR_OVS_PATH"
 sudo mkdir -p "$COLLECTOR_OVS_PATH"
-# sudo ovs-ofctl add-flows br0 "$RULES_PATH/$RULESET"
-
-
-  # ovs-ofctl add-flow br0 "table=0, priority=100, dl_dst=00:00:00:00:00:05, actions=output:ens16f0"
-  # ovs-ofctl add-flow br0 "table=0, priority=100, dl_dst=00:00:00:00:00:06, actions=output:ens16f1"
-
+# sudo ovs-ofctl add-flows br0 /home/advay/gigaflow/ovs-pipelines/high-locality/cord/ofdpa/of2/10k/ruleset.ovs
 
 ovs-ofctl add-flows br0 /home/advay/gigaflow/gvs/.ci/flows.ovs
