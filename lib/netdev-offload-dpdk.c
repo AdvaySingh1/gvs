@@ -123,7 +123,7 @@ static char *p4sdnet_action_names[] = {
     "dropPacket",
     "set_table_tag",
     "set_table_tag_and_forward",
-};
+    "NoAction"};
 
 /* P4SDNet key bytes for Gigaflow offload
    table_tag=0x00, eth_src=0x000000000000, eth_dst=0x000000000001,
@@ -3196,30 +3196,30 @@ static int
 netdev_offload_p4sdnet_install_default_rules()
 {
     VLOG_INFO("calling netdev_offload_p4sdnet_install_default_rules()\n");
-    uint8_t defaultKeyArray[GIGAFLOW_KEY_LEN];
-    uint8_t defaultMaskArray[GIGAFLOW_KEY_LEN];
-    uint32_t defaultPriority = GIGAFLOW_OFFLOAD_DEFAULT_PRIORITY;
-    uint32_t defaultActionID = P4SDNET_FORWARD_ACTION;
-    uint8_t defaultActionParamsArray[GIGAFLOW_ACTION_LEN] = {0x00, 0x02};
+    // uint8_t defaultKeyArray[GIGAFLOW_KEY_LEN];
+    // uint8_t defaultMaskArray[GIGAFLOW_KEY_LEN];
+    // uint32_t defaultPriority = GIGAFLOW_OFFLOAD_DEFAULT_PRIORITY;
+    // uint32_t defaultActionID = P4SDNET_FORWARD_ACTION;
+    // uint8_t defaultActionParamsArray[GIGAFLOW_ACTION_LEN] = {0x00, 0x02};
 
-    memset(defaultKeyArray, 0, GIGAFLOW_KEY_LEN);
-    memset(defaultMaskArray, 0, GIGAFLOW_KEY_LEN);
-    defaultMaskArray[P4SDNET_KEY_B0_TABLE_TAG] = 0xff;
-    XilSdnetReturnType Result;
+    // memset(defaultKeyArray, 0, GIGAFLOW_KEY_LEN);
+    // memset(defaultMaskArray, 0, GIGAFLOW_KEY_LEN);
+    // defaultMaskArray[P4SDNET_KEY_B0_TABLE_TAG] = 0xff;
+    // XilSdnetReturnType Result;
 
-    Result = XilSdnetTableInsert(
-        p4sdnet_offload_ctx.table_ctx_ptr[P4SDNET_GIGAFLOW_TABLE_0],
-        defaultKeyArray,
-        defaultMaskArray,
-        defaultPriority,
-        defaultActionID,
-        defaultActionParamsArray);
-    if (Result != XIL_SDNET_SUCCESS)
-    {
-        return Result;
-    }
-    printf("Default Rule: Forward To CPU Initialized\n");
-    return XIL_SDNET_SUCCESS;
+    // Result = XilSdnetTableInsert(
+    //     p4sdnet_offload_ctx.table_ctx_ptr[P4SDNET_GIGAFLOW_TABLE_0],
+    //     defaultKeyArray,
+    //     defaultMaskArray,
+    //     defaultPriority,
+    //     defaultActionID,
+    //     defaultActionParamsArray);
+    // if (Result != XIL_SDNET_SUCCESS)
+    // {
+    //     return Result;
+    // }
+    // printf("Default Rule: Forward To CPU Initialized\n");
+    // return XIL_SDNET_SUCCESS;
 }
 
 static int
@@ -3388,7 +3388,7 @@ ovs_match_to_p4sdnet_match(struct match *match, uint8_t *entry_key,
     ovs_mask_to_p4sdnet_mask(match, entry_mask);
 }
 
-// static void
+// static int
 // ovs_action_to_p4sdnet_action(struct nlattr *actions, size_t actions_len,
 //                              uint8_t *entry_action_params,
 //                              uint32_t *entry_action_id,
@@ -3411,6 +3411,9 @@ ovs_match_to_p4sdnet_match(struct match *match, uint8_t *entry_key,
 //         {
 //         case OVS_ACTION_ATTR_UNSPEC:
 //         case OVS_ACTION_ATTR_OUTPUT:
+//         {
+//             VLOG_INFO("Calling output %d\n", type);
+//         }
 //         case OVS_ACTION_ATTR_USERSPACE:
 //         case OVS_ACTION_ATTR_SET:
 //         case OVS_ACTION_ATTR_PUSH_VLAN:
@@ -3421,6 +3424,9 @@ ovs_match_to_p4sdnet_match(struct match *match, uint8_t *entry_key,
 //         case OVS_ACTION_ATTR_PUSH_MPLS:
 //         case OVS_ACTION_ATTR_POP_MPLS:
 //         case OVS_ACTION_ATTR_SET_MASKED:
+//         {
+//             VLOG_INFO("Calling masked %d\n", type);
+//         }
 //         case OVS_ACTION_ATTR_CT:
 //         case OVS_ACTION_ATTR_TRUNC:
 //         case OVS_ACTION_ATTR_PUSH_ETH:
@@ -3435,6 +3441,9 @@ ovs_match_to_p4sdnet_match(struct match *match, uint8_t *entry_key,
 //         case OVS_ACTION_ATTR_TUNNEL_PUSH:
 //         case OVS_ACTION_ATTR_TUNNEL_POP:
 //         case OVS_ACTION_ATTR_DROP:
+//         {
+//             VLOG_INFO("Calling drop %d\n", type);
+//         }
 //         case OVS_ACTION_ATTR_LB_OUTPUT:
 //         case __OVS_ACTION_ATTR_MAX:
 //         {
@@ -3454,20 +3463,21 @@ ovs_match_to_p4sdnet_match(struct match *match, uint8_t *entry_key,
 //             break;
 //         }
 //     }
+//     return 0;
 // }
 
 static uint8_t
-ovs_nl_attr_to_p4sdnet_port(const struct nlattr *odp_port)
+ovs_nl_attr_to_p4sdnet_port(const struct nlattr *odp_port_nla)
 {
-    // TODO check
-    uint8_t odp_port = (uint8_t)nl_attr_get_odp_port(odp_port);
+    // TODO check in every case
+    uint32_t odp_port = (uint32_t)nl_attr_get_odp_port(odp_port_nla);
     uint8_t p4sdnet_port = 0;
-    switch ((uint32_t)odp_port)
+    switch (odp_port)
     {
-    case 0:
+    case 2:
         p4sdnet_port = NETFPGA_CMAC_0;
         break;
-    case 1:
+    case 3:
         p4sdnet_port = NETFPGA_CMAC_1;
         break;
     default:
@@ -3477,10 +3487,10 @@ ovs_nl_attr_to_p4sdnet_port(const struct nlattr *odp_port)
 }
 
 static uint8_t
-ovs_nl_attr_to_p4sdnet_table_tag(const struct nlattr *table_tag)
+ovs_nl_attr_to_p4sdnet_table_tag(const struct nlattr *table_tag_nla)
 {
     // TODO check
-    return nl_attr_get_u8(table_tag);
+    return nl_attr_get_u8(table_tag_nla);
 }
 
 static int
@@ -3515,10 +3525,16 @@ ovs_action_to_p4sdnet_action(struct nlattr *actions, size_t actions_len,
             */
             if (prev_action == P4SDNET_NO_ACTION)
             {
+                // TODO
+                // *entry_action_id =
+                //     p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_FORWARD_ACTION];
+                // prev_action = P4SDNET_FORWARD_ACTION;
+                // entry_action_params[P4SDNET_ACTION_PARAM_B1] = ovs_nl_attr_to_p4sdnet_port(a);
                 *entry_action_id =
-                    p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_FORWARD_ACTION];
-                prev_action = P4SDNET_FORWARD_ACTION;
-                entry_action_params[P4SDNET_ACTION_PARAM_B1] = ovs_nl_attr_to_p4sdnet_port(a);
+                    p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION];
+                prev_action = P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION;
+                entry_action_params[P4SDNET_ACTION_PARAM_B0] = ovs_nl_attr_to_p4sdnet_port(a);
+                entry_action_params[P4SDNET_ACTION_PARAM_B1] = 0xff;
             }
             else if (prev_action == P4SDNET_INSERT_NEXT_TABLE_TAG_ACTION)
             {

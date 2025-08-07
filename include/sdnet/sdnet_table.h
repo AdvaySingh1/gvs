@@ -98,7 +98,7 @@
  *  - API allows CAM response data to be defined in terms of action parameters
  *    and action ID
  *  - API provides functions to look up the action ID based on the action's name
- *
+ * 
  * These features aim to provide an increased ease of use for the development of
  * control plane applications by abstracting away these implementation-specific
  * details.
@@ -134,7 +134,7 @@
  * <b>XIL_SDNET_TABLE_ERR_FUNCTION_NOT_SUPPORTED</b>.
  *
  * \section Endianness
- *
+ * 
  * Several of the functions offered by the table driver accept pointers to byte
  * arrays for specifying the data for keys and action parameters.  The table
  * driver supports two different layouts - these are:
@@ -153,441 +153,442 @@
 /* SECTION: Header includes */
 /****************************************************************************************************************************************************/
 
-#include "sdnet/cam_top.h"
+#include "cam_top.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-    /****************************************************************************************************************************************************/
-    /* SECTION: Type definitions */
-    /****************************************************************************************************************************************************/
+/****************************************************************************************************************************************************/
+/* SECTION: Type definitions */
+/****************************************************************************************************************************************************/
 
-    typedef enum XilSdnetTableMode
-    {
-        XIL_SDNET_TABLE_MODE_BCAM,
-        XIL_SDNET_TABLE_MODE_STCAM,
-        XIL_SDNET_TABLE_MODE_TCAM,
-        XIL_SDNET_TABLE_MODE_DCAM,
-        XIL_SDNET_NUM_TABLE_MODES
-    } XilSdnetTableMode;
+typedef enum XilSdnetTableMode
+{
+    XIL_SDNET_TABLE_MODE_BCAM,
+    XIL_SDNET_TABLE_MODE_STCAM,
+    XIL_SDNET_TABLE_MODE_TCAM,
+    XIL_SDNET_TABLE_MODE_DCAM,
+    XIL_SDNET_NUM_TABLE_MODES
+} XilSdnetTableMode;
 
-    typedef struct XilSdnetAction
-    {
-        const char *NameStringPtr;
-        uint32_t ParamListSize;
-        XilSdnetAttribute *ParamListPtr;
-    } XilSdnetAction;
+typedef struct XilSdnetAction
+{
+    const char          *NameStringPtr;
+    uint32_t            ParamListSize;
+    XilSdnetAttribute   *ParamListPtr;
+} XilSdnetAction;
 
-    /** Populated by the user to define the table configuration */
-    typedef struct XilSdnetTableConfig
-    {
-        XilSdnetEndian Endian;          /**< Format of key, mask and action parameter byte arrays */
-        XilSdnetTableMode Mode;         /**< Specfies which variety of CAM implements this table */
-        uint32_t KeySizeBits;           /**< Key size in bits */
-        XilSdnetCamConfig CamConfig;    /**< Configuration structure for the CAM that implements this table */
-        uint32_t ActionIdWidthBits;     /**< Width of the action ID in bits */
-        uint32_t ActionListSize;        /**< Number of actions present in this table */
-        XilSdnetAction **ActionListPtr; /**< Structure describing the actions present in the design */
-    } XilSdnetTableConfig;
+/** Populated by the user to define the table configuration */
+typedef struct XilSdnetTableConfig
+{
+    XilSdnetEndian      Endian;             /**< Format of key, mask and action parameter byte arrays */
+    XilSdnetTableMode   Mode;               /**< Specfies which variety of CAM implements this table */
+    uint32_t            KeySizeBits;        /**< Key size in bits */
+    XilSdnetCamConfig   CamConfig;          /**< Configuration structure for the CAM that implements this table */
+    uint32_t            ActionIdWidthBits;  /**< Width of the action ID in bits */
+    uint32_t            ActionListSize;     /**< Number of actions present in this table */
+    XilSdnetAction      **ActionListPtr;    /**< Structure describing the actions present in the design */
+} XilSdnetTableConfig;
 
-    /** Forward declaration to support context structure declaration */
-    typedef struct XilSdnetTablePrivateCtx XilSdnetTablePrivateCtx;
+/** Forward declaration to support context structure declaration */
+typedef struct XilSdnetTablePrivateCtx XilSdnetTablePrivateCtx;
 
-    /** Holds context information needed by the table driver's API */
-    typedef struct XilSdnetTableCtx
-    {
-        XilSdnetTablePrivateCtx *PrivateCtxPtr; /**< Internal context data used by driver implementation */
-    } XilSdnetTableCtx;
+/** Holds context information needed by the table driver's API */
+typedef struct XilSdnetTableCtx
+{
+    XilSdnetTablePrivateCtx *PrivateCtxPtr; /**< Internal context data used by driver implementation */
+} XilSdnetTableCtx;
 
-    /****************************************************************************************************************************************************/
-    /* SECTION: Table function declarations */
-    /****************************************************************************************************************************************************/
+/****************************************************************************************************************************************************/
+/* SECTION: Table function declarations */
+/****************************************************************************************************************************************************/
 
-    /**
-     * Initialization function for the table driver API
-     *
-     * @param[in,out] CtxPtr        Pointer to an uninitialized table context structure instance.
-     *                              Is populated by function execution.
-     *
-     * @param[in] EnvIfPtr          Pointer to environment interface definition
-     *
-     * @param[in] ConfigPtr         Pointer to driver configuration definition
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Initialization function for the table driver API
+ *
+ * @param[in,out] CtxPtr        Pointer to an uninitialized table context structure instance.
+ *                              Is populated by function execution.
+ *
+ * @param[in] EnvIfPtr          Pointer to environment interface definition
+ *
+ * @param[in] ConfigPtr         Pointer to driver configuration definition
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableInit(XilSdnetTableCtx *CtxPtr, XilSdnetEnvIf *EnvIfPtr, XilSdnetTableConfig *ConfigPtr);
+XilSdnetReturnType XilSdnetTableInit(XilSdnetTableCtx *CtxPtr, XilSdnetEnvIf *EnvIfPtr, XilSdnetTableConfig *ConfigPtr);
 
-    /**
-     * Gets the implementation mode of the table.
-     *
-     * @param[in] CtxPtr    Pointer to the table driver instance context
-     *
-     * @param[out] ModePtr  Pointer to the implementation mode of table.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Gets the implementation mode of the table.
+ *
+ * @param[in] CtxPtr    Pointer to the table driver instance context
+ *
+ * @param[out] ModePtr  Pointer to the implementation mode of table.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableGetMode(XilSdnetTableCtx *CtxPtr, XilSdnetTableMode *ModePtr);
+XilSdnetReturnType XilSdnetTableGetMode(XilSdnetTableCtx *CtxPtr, XilSdnetTableMode *ModePtr);
 
-    /**
-     * Get the number of actions present in a table.
-     *
-     * @param[in] CtxPtr            Pointer to the table driver instance context
-     *
-     * @param[out] NumActionsPtr    Pointer to integer holding the number of actions present in the table.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Get the number of actions present in a table.
+ *
+ * @param[in] CtxPtr            Pointer to the table driver instance context
+ *
+ * @param[out] NumActionsPtr    Pointer to integer holding the number of actions present in the table.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableGetNumActions(XilSdnetTableCtx *CtxPtr, uint32_t *NumActionsPtr);
+XilSdnetReturnType XilSdnetTableGetNumActions(XilSdnetTableCtx *CtxPtr, uint32_t *NumActionsPtr);
 
-    /**
-     * Get the size of the key for this table.
-     *
-     * @param[in] CtxPtr            Pointer to the table driver instance context
-     *
-     * @param [out] KeySizeBitsPtr  Pointer to integer holding the size of the key measured in bits.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Get the size of the key for this table.
+ *
+ * @param[in] CtxPtr            Pointer to the table driver instance context
+ *
+ * @param [out] KeySizeBitsPtr  Pointer to integer holding the size of the key measured in bits.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableGetKeySizeBits(XilSdnetTableCtx *CtxPtr, uint32_t *KeySizeBitsPtr);
+XilSdnetReturnType XilSdnetTableGetKeySizeBits(XilSdnetTableCtx *CtxPtr, uint32_t *KeySizeBitsPtr);
 
-    /**
-     * Get the size of the action parameters for this table.
-     *
-     * @param[in] CtxPtr                    Pointer to the table driver instance context
-     *
-     * @param [out] ActionParamSizeBitsPtr  Pointer to integer holding the size of the packed action parameters measured in bits.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Get the size of the action parameters for this table.
+ *
+ * @param[in] CtxPtr                    Pointer to the table driver instance context
+ *
+ * @param [out] ActionParamSizeBitsPtr  Pointer to integer holding the size of the packed action parameters measured in bits.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableGetActionParamsSizeBits(XilSdnetTableCtx *CtxPtr, uint32_t *ActionParamsSizeBitsPtr);
+XilSdnetReturnType XilSdnetTableGetActionParamsSizeBits(XilSdnetTableCtx *CtxPtr, uint32_t *ActionParamsSizeBitsPtr);
 
-    /**
-     * Get the action identifer width in bits for this table.
-     *
-     * @param[in] CtxPtr                    Pointer to the table driver instance context
-     *
-     * @param [out] ActionIdWidthBitsPtr    Pointer to integer holding the size of the action id width measured in bits.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Get the action identifer width in bits for this table.
+ *
+ * @param[in] CtxPtr                    Pointer to the table driver instance context
+ *
+ * @param [out] ActionIdWidthBitsPtr    Pointer to integer holding the size of the action id width measured in bits.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableGetActionIdWidthBits(XilSdnetTableCtx *CtxPtr, uint32_t *ActionIdWidthBitsPtr);
+XilSdnetReturnType XilSdnetTableGetActionIdWidthBits(XilSdnetTableCtx *CtxPtr, uint32_t *ActionIdWidthBitsPtr);
 
-    /**
-     * Gets an action identifier for an action in a table.
-     *
-     * @param[in] CtxPtr            Pointer to the table driver instance context
-     *
-     * @param[in] ActionNamePtr     Pointer to string that holds the action name.
-     *
-     * @param[out] ActionIdPtr      Pointer to integer holding the action identifier.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Gets an action identifier for an action in a table.
+ *
+ * @param[in] CtxPtr            Pointer to the table driver instance context
+ *
+ * @param[in] ActionNamePtr     Pointer to string that holds the action name.
+ *
+ * @param[out] ActionIdPtr      Pointer to integer holding the action identifier.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableGetActionId(XilSdnetTableCtx *CtxPtr, char *ActionNamePtr, uint32_t *ActionIdPtr);
+XilSdnetReturnType XilSdnetTableGetActionId(XilSdnetTableCtx *CtxPtr, char *ActionNamePtr, uint32_t *ActionIdPtr);
 
-    /**
-     * Gets the name of an action for a given identifier if present in the table.
-     *
-     * @param[in] CtxPtr                Pointer to the table driver instance context
-     *
-     * @param[in] ActionId              The action identifier.
-     *
-     * @param[out] ActionNamePtr        Pointer to char buffer to hold the action name.
-     *
-     * @param[in] ActionNameNumBytes    The number of characters the action name buffer can hold including the null terminating character.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Gets the name of an action for a given identifier if present in the table.
+ *
+ * @param[in] CtxPtr                Pointer to the table driver instance context
+ *
+ * @param[in] ActionId              The action identifier.
+ *
+ * @param[out] ActionNamePtr        Pointer to char buffer to hold the action name.
+ *
+ * @param[in] ActionNameNumBytes    The number of characters the action name buffer can hold including the null terminating character.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableGetActionNameById(XilSdnetTableCtx *CtxPtr,
-                                                      uint32_t ActionId,
-                                                      char *ActionNamePtr,
-                                                      uint32_t ActionNameNumBytes);
-
-    /**
-     * Inserts an entry into the table instance.
-     *
-     * If an existing matching entry is found, the function fails by returning error
-     * code XIL_SDNET_CAM_ERR_DUPLICATE_FOUND. If an entry is not found, then it is
-     * inserted in the table instance.
-     *
-     * When the table has an implementation mode of DCAM or BCAM the following parameters are not used:
-     *   - /p MaskPtr, which must be set to NULL
-     *   - /p Priority, which is ignored by the function
-     * see @ref tbl_mode_dep
-     *
-     * @param[in] CtxPtr            Pointer to the table driver instance context
-     *
-     * @param[in] KeyPtr            Pointer to byte array holding the key for the entry.
-     *
-     * @param[in] MaskPtr           Pointer to byte array holding the mask for the entry.
-     *
-     * @param[in] Priority          The priority of the entry. If multiple matches occur, the winning matching
-     *                              entry is determined based on the priority value. The entry with the lowest priority
-     *                              wins. If there are multiple matches with the same lowest priority, any of them becomes
-     *                              the winner.
-     *
-     * @param[in] ActionId          A action identifier specifies the action executed when a hit occurs for this entry.
-     *
-     * @param[in] ActionParamsPtr   Pointer to byte array holding the action parameters of the entry.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
-
-    XilSdnetReturnType XilSdnetTableInsert(XilSdnetTableCtx *CtxPtr,
-                                           uint8_t *KeyPtr,
-                                           uint8_t *MaskPtr,
-                                           uint32_t Priority,
-                                           uint32_t ActionId,
-                                           uint8_t *ActionParamsPtr);
-
-    /**
-     * Updates an entry in the table instance.
-     *
-     * If an existing matching entry is found, the response is updated. If an entry
-     * is not found, the function fails with error code
-     * XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
-     *
-     * * When the table has an implementation mode of DCAM or BCAM the following parameters are not used:
-     *   - @p MaskPtr, which must be set to NULL
-     * see @ref tbl_mode_dep
-     *
-     * @param[in] CtxPtr            Pointer to the table driver instance context
-     *
-     * @param[in] KeyPtr            Pointer to byte array holding the key for the entry.
-     *
-     * @param[in] MaskPtr           Pointer to byte array holding the mask for the entry.
-     *
-     * @param[in] ActionId          A action identifier specifies the action executed when a hit occurs for this entry.
-     *
-     * @param[in] ActionParamsPtr   Pointer to byte array holding the action parameters of the entry.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
-
-    XilSdnetReturnType XilSdnetTableUpdate(XilSdnetTableCtx *CtxPtr,
-                                           uint8_t *KeyPtr,
-                                           uint8_t *MaskPtr,
-                                           uint32_t ActionId,
-                                           uint8_t *ActionParamsPtr);
-
-    /**
-     * Gets an entry from the table instance with the specified response.
-     *
-     * If a matching entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
-     *
-     * When the table has an implementation mode of DCAM or BCAM the following parameters are not used:
-     *   - @p MaskPtr, which must be set to NULL
-     * see @ref tbl_mode_dep
-     *
-     * @param[in] CtxPtr            Pointer to the table driver instance context
-     *
-     * @param[in] ActionId          An action identifier specifies the action executed when a hit occurs for this entry.
-     *
-     * @param[in] ActionParamsPtr   Pointer to byte array holding the action parameteres to search for.
-     *
-     * @param[in] ActionParamsMaskPtr   The buffers pointed to by ActionParamsPtr and ActionParamsMaskPtr are ANDed and then
-     *                                  searched for.
-     *
-     * @param[in,out] PositionPtr   Position in the database. Used for consecutive get operations, set to 0 for
-     *                              first get.
-     *
-     * @param[out] KeyPtr           Pointer to byte array with storage for the key that is read.
-     *
-     * @param[out] MaskPtr          Pointer to byte array with storage for the mask that is read.
-     *
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     *
-     */
-
-    XilSdnetReturnType XilSdnetTableGetByResponse(XilSdnetTableCtx *CtxPtr,
+XilSdnetReturnType XilSdnetTableGetActionNameById(XilSdnetTableCtx *CtxPtr,
                                                   uint32_t ActionId,
-                                                  uint8_t *ActionParamsPtr,
-                                                  uint8_t *ActionParamsMaskPtr,
-                                                  uint32_t *PositionPtr,
-                                                  uint8_t *KeyPtr,
-                                                  uint8_t *MaskPtr);
+                                                  char *ActionNamePtr,
+                                                  uint32_t ActionNameNumBytes);
 
-    /**
-     * Gets an entry from the table instance with the specified key.
-     *
-     * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
-     * The function does not read from the hardware, it reads from the shadow copy in system memory.
-     * The function uses a hash table and is fast.
-     *
-     * When the table has an implementation mode of DCAM this function is not supported.
-     * When the table has an implementation mode of BCAM the following parameters are not used:
-     *   - @p MaskPtr, which must be set to NULL
-     *   - @p PriorityPtr, which must be set to NULL
-     * see @ref tbl_mode_dep
-     *
-     * @param[in] CtxPtr            Pointer to the table driver instance context
-     *
-     * @param[in] KeyPtr            Pointer to byte array holding the key to search for.
-     *
-     * @param[in] MaskPtr           Pointer to byte array holding the mask to search for.
-     *
-     * @param[out] PriorityPtr      Pointer to integer with storage for the priority of the entry that is read.
-     *
-     * @param[out] ActionIdPtr      Pointer to the action identifier assoicated with this table entry.
-     *
-     * @param[out] ActionParamsPtr      Pointer to byte array with storage for the action parameters that are read.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Inserts an entry into the table instance.
+ *
+ * If an existing matching entry is found, the function fails by returning error
+ * code XIL_SDNET_CAM_ERR_DUPLICATE_FOUND. If an entry is not found, then it is
+ * inserted in the table instance.
+ *
+ * When the table has an implementation mode of DCAM or BCAM the following parameters are not used:
+ *   - /p MaskPtr, which must be set to NULL
+ *   - /p Priority, which is ignored by the function
+ * see @ref tbl_mode_dep
+ *
+ * @param[in] CtxPtr            Pointer to the table driver instance context
+ *
+ * @param[in] KeyPtr            Pointer to byte array holding the key for the entry.
+ *
+ * @param[in] MaskPtr           Pointer to byte array holding the mask for the entry.
+ *
+ * @param[in] Priority          The priority of the entry. If multiple matches occur, the winning matching
+ *                              entry is determined based on the priority value. The entry with the lowest priority
+ *                              wins. If there are multiple matches with the same lowest priority, any of them becomes
+ *                              the winner.
+ *
+ * @param[in] ActionId          A action identifier specifies the action executed when a hit occurs for this entry.
+ *
+ * @param[in] ActionParamsPtr   Pointer to byte array holding the action parameters of the entry.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableGetByKey(XilSdnetTableCtx *CtxPtr,
-                                             uint8_t *KeyPtr,
-                                             uint8_t *MaskPtr,
-                                             uint32_t *PriorityPtr,
-                                             uint32_t *ActionIdPtr,
-                                             uint8_t *ActionParamsPtr);
+XilSdnetReturnType XilSdnetTableInsert(XilSdnetTableCtx *CtxPtr,
+                                       uint8_t *KeyPtr,
+                                       uint8_t *MaskPtr,
+                                       uint32_t Priority,
+                                       uint32_t ActionId,
+                                       uint8_t *ActionParamsPtr);
 
-    /**
-     * Looks up an entry in the table instance.
-     *
-     * This function provides the same response as if a lookup had been performed in hardware.
-     * If no match is found in the database, the response value associated with the catch-all entry
-     * is returned.
-     *
-     * If an entry is not found, the function returns XIL_SDNET_CAM_ERR_KEY_NOT_FOUND
-     *
-     *
-     * @param[in] CtxPtr            Pointer to the table driver instance context
-     *
-     * @param[in] KeyPtr            Pointer to byte array holding the key to lookup.
-     *
-     * @param[out] ActionIdPtr      Pointer to the action identifier assoicated with this table entry.
-     *
-     * @param[out] ActionParamsPtr  Pointer to byte array with storage for the action parameters that are read.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Updates an entry in the table instance.
+ *
+ * If an existing matching entry is found, the response is updated. If an entry
+ * is not found, the function fails with error code
+ * XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+ *
+ * * When the table has an implementation mode of DCAM or BCAM the following parameters are not used:
+ *   - @p MaskPtr, which must be set to NULL
+ * see @ref tbl_mode_dep
+ *
+ * @param[in] CtxPtr            Pointer to the table driver instance context
+ *
+ * @param[in] KeyPtr            Pointer to byte array holding the key for the entry.
+ *
+ * @param[in] MaskPtr           Pointer to byte array holding the mask for the entry.
+ *
+ * @param[in] ActionId          A action identifier specifies the action executed when a hit occurs for this entry.
+ *
+ * @param[in] ActionParamsPtr   Pointer to byte array holding the action parameters of the entry.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableLookup(XilSdnetTableCtx *CtxPtr,
-                                           uint8_t *KeyPtr,
-                                           uint32_t *ActionIdPtr,
-                                           uint8_t *ActionParamsPtr);
+XilSdnetReturnType XilSdnetTableUpdate(XilSdnetTableCtx *CtxPtr,
+                                       uint8_t *KeyPtr,
+                                       uint8_t *MaskPtr,
+                                       uint32_t ActionId,
+                                       uint8_t *ActionParamsPtr);
 
-    /**
-     * Delete an entry with the specified key from the table instance.
-     *
-     * When the table has an implementation mode of DCAM orBCAM the following parameters are not used:
-     *   - @p MaskPtr, which must be set to NULL
-     * see @ref tbl_mode_dep
-     *
-     * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
-     *
-     * @param[in] CtxPtr            Pointer to the table driver instance context
-     *
-     * @param[in] KeyPtr            Pointer to byte array holding the key to be deleted.
-     *
-     * @param[in] MaskPtr           Pointer to byte array holding the mask to be deleted.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Gets an entry from the table instance with the specified response.
+ *
+ * If a matching entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+ *
+ * When the table has an implementation mode of DCAM or BCAM the following parameters are not used:
+ *   - @p MaskPtr, which must be set to NULL
+ * see @ref tbl_mode_dep
+ *
+ * @param[in] CtxPtr            Pointer to the table driver instance context
+ *
+ * @param[in] ActionId          An action identifier specifies the action executed when a hit occurs for this entry.
+ *
+ * @param[in] ActionParamsPtr   Pointer to byte array holding the action parameteres to search for.
+ *
+ * @param[in] ActionParamsMaskPtr   The buffers pointed to by ActionParamsPtr and ActionParamsMaskPtr are ANDed and then
+ *                                  searched for.
+ *
+ * @param[in,out] PositionPtr   Position in the database. Used for consecutive get operations, set to 0 for
+ *                              first get.
+ *
+ * @param[out] KeyPtr           Pointer to byte array with storage for the key that is read.
+ *
+ * @param[out] MaskPtr          Pointer to byte array with storage for the mask that is read.
+ *
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ *
+ */
 
-    XilSdnetReturnType XilSdnetTableDelete(XilSdnetTableCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr);
+XilSdnetReturnType XilSdnetTableGetByResponse(XilSdnetTableCtx *CtxPtr,
+                                              uint32_t ActionId,
+                                              uint8_t *ActionParamsPtr,
+                                              uint8_t *ActionParamsMaskPtr,
+                                              uint32_t *PositionPtr,
+                                              uint8_t *KeyPtr,
+                                              uint8_t *MaskPtr);
 
-    /**
-     * Reads and clears the ECC counters of the table instance.
-     *
-     * When the table has an implementation mode of DCAM this function is not supported.
-     * see @ref tbl_mode_dep
-     *
-     * @param[in] CtxPtr            Pointer to the table driver instance context
-     *
-     * @param[out] CorrectedSingleBitErrorsPtr  The number of single bit errors the hardware scrubbing
-     *                                          process has detected and corrected. Errors might
-     *                                          have been detected by a hardware lookup and then corrected
-     *                                          dynamically for the lookups, but still not counted.
-     *                                          The scrubbing process runs in the background and corrects
-     *                                          errors permanently. The counter is only incremented after
-     *                                          the error is corrected permanently.
-     *
-     * @param[out] DetectedDoubleBitErrorsPtr   The number of detected double-bit errors. Double-bit
-     *                                          errors are fatal errors and the data base is corrupt. The hardware
-     *                                          cannot correct the error without help from software. The instance
-     *                                          has generated an interrupt and this counter can be used to find
-     *                                          the instance which caused the interrupt if multiple instances are
-     *                                          in use. Lookups detecting double-bit errors will not discard the lookup,
-     *                                          the lookup result might be corrupt. Once the double-bit error is
-     *                                          detected the interrupt pin is asserted and it is advised to use this
-     *                                          signal to discard packets until the data base is corrected.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Gets an entry from the table instance with the specified key.
+ *
+ * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+ * The function does not read from the hardware, it reads from the shadow copy in system memory.
+ * The function uses a hash table and is fast.
+ *
+ * When the table has an implementation mode of DCAM this function is not supported.
+ * When the table has an implementation mode of BCAM the following parameters are not used:
+ *   - @p MaskPtr, which must be set to NULL
+ *   - @p PriorityPtr, which must be set to NULL
+ * see @ref tbl_mode_dep
+ *
+ * @param[in] CtxPtr            Pointer to the table driver instance context
+ *
+ * @param[in] KeyPtr            Pointer to byte array holding the key to search for.
+ *
+ * @param[in] MaskPtr           Pointer to byte array holding the mask to search for.
+ *
+ * @param[out] PriorityPtr      Pointer to integer with storage for the priority of the entry that is read.
+ *
+ * @param[out] ActionIdPtr      Pointer to the action identifier assoicated with this table entry.
+ *
+ * @param[out] ActionParamsPtr      Pointer to byte array with storage for the action parameters that are read.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableGetEccCountersClearOnRead(XilSdnetTableCtx *CtxPtr,
-                                                              uint32_t *CorrectedSingleBitErrorsPtr,
-                                                              uint32_t *DetectedDoubleBitErrorsPtr);
+XilSdnetReturnType XilSdnetTableGetByKey(XilSdnetTableCtx *CtxPtr,
+                                         uint8_t *KeyPtr,
+                                         uint8_t *MaskPtr,
+                                         uint32_t *PriorityPtr,
+                                         uint32_t *ActionIdPtr,
+                                         uint8_t *ActionParamsPtr);
 
-    /**
-     * Reads and clears the ECC adress registers of the table instance.
-     *
-     * When the table has an implementation mode of DCAM this function is not supported.
-     * see @ref tbl_mode_dep
-     *
-     * @param[in] CtxPtr                            Pointer to the table driver instance context
-     *
-     * @param[out] FailingAddressSingleBitErrorPtr  The address of the first single bit error detected and corrected
-     *                                              by the hardware scrubbing process. Additional errors might
-     *                                              have been detected during a hardware lookup and then corrected
-     *                                              dynamically, but this register only reflect the
-     *                                              errrors detected by hardware scrubbing.
-     *
-     * @param[out] FailingAddressDoubleBitErrorPtr The address of the first double-bit error detected by the
-     *                                              hardware scrubbing process.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Looks up an entry in the table instance.
+ *
+ * This function provides the same response as if a lookup had been performed in hardware.
+ * If no match is found in the database, the response value associated with the catch-all entry
+ * is returned.
+ *
+ * If an entry is not found, the function returns XIL_SDNET_CAM_ERR_KEY_NOT_FOUND
+ *
+ *
+ * @param[in] CtxPtr            Pointer to the table driver instance context
+ *
+ * @param[in] KeyPtr            Pointer to byte array holding the key to lookup.
+ *
+ * @param[out] ActionIdPtr      Pointer to the action identifier assoicated with this table entry.
+ *
+ * @param[out] ActionParamsPtr  Pointer to byte array with storage for the action parameters that are read.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableGetEccAddressesClearOnRead(XilSdnetTableCtx *CtxPtr,
-                                                               uint32_t *FailingAddressSingleBitErrorPtr,
-                                                               uint32_t *FailingAddressDoubleBitErrorPtr);
+XilSdnetReturnType XilSdnetTableLookup(XilSdnetTableCtx *CtxPtr,
+                                       uint8_t *KeyPtr,
+                                       uint32_t *ActionIdPtr,
+                                       uint8_t *ActionParamsPtr);
 
-    /**
-     * Rewrite all table memory contents to recover from ECC double-bit error.
-     *
-     * When the table has an implementation mode of DCAM this function is not supported.
-     * see @ref tbl_mode_dep
-     *
-     * @param[in] CtxPtr Pointer to the table driver instance context
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
+/**
+ * Delete an entry with the specified key from the table instance.
+ *
+ * When the table has an implementation mode of DCAM orBCAM the following parameters are not used:
+ *   - @p MaskPtr, which must be set to NULL
+ * see @ref tbl_mode_dep
+ *
+ * If an entry is not found, the function fails with error code XIL_SDNET_CAM_ERR_KEY_NOT_FOUND.
+ *
+ * @param[in] CtxPtr            Pointer to the table driver instance context
+ *
+ * @param[in] KeyPtr            Pointer to byte array holding the key to be deleted.
+ *
+ * @param[in] MaskPtr           Pointer to byte array holding the mask to be deleted.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    XilSdnetReturnType XilSdnetTableRewrite(XilSdnetTableCtx *CtxPtr);
+XilSdnetReturnType XilSdnetTableDelete(XilSdnetTableCtx *CtxPtr, uint8_t *KeyPtr, uint8_t *MaskPtr);
 
-    /**
-     * Reset a table.
-     *
-     * @param[in] CtxPtr Pointer to the table driver instance context.
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
-    XilSdnetReturnType XilSdnetTableReset(XilSdnetTableCtx *CtxPtr);
+/**
+ * Reads and clears the ECC counters of the table instance.
+ *
+ * When the table has an implementation mode of DCAM this function is not supported.
+ * see @ref tbl_mode_dep
+ *
+ * @param[in] CtxPtr            Pointer to the table driver instance context
+ *
+ * @param[out] CorrectedSingleBitErrorsPtr  The number of single bit errors the hardware scrubbing
+ *                                          process has detected and corrected. Errors might
+ *                                          have been detected by a hardware lookup and then corrected
+ *                                          dynamically for the lookups, but still not counted.
+ *                                          The scrubbing process runs in the background and corrects
+ *                                          errors permanently. The counter is only incremented after
+ *                                          the error is corrected permanently.
+ *
+ * @param[out] DetectedDoubleBitErrorsPtr   The number of detected double-bit errors. Double-bit
+ *                                          errors are fatal errors and the data base is corrupt. The hardware
+ *                                          cannot correct the error without help from software. The instance
+ *                                          has generated an interrupt and this counter can be used to find
+ *                                          the instance which caused the interrupt if multiple instances are
+ *                                          in use. Lookups detecting double-bit errors will not discard the lookup,
+ *                                          the lookup result might be corrupt. Once the double-bit error is
+ *                                          detected the interrupt pin is asserted and it is advised to use this
+ *                                          signal to discard packets until the data base is corrected.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
 
-    /**
-     * Destroy the table driver instance
-     *
-     * All memory allocated by \ref XilSdnetTableInit is released.
-     *
-     * @param[in] CtxPtr    Pointer to the table driver instance context
-     *
-     * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
-     */
-    XilSdnetReturnType XilSdnetTableExit(XilSdnetTableCtx *CtxPtr);
+XilSdnetReturnType XilSdnetTableGetEccCountersClearOnRead(XilSdnetTableCtx *CtxPtr,
+                                                          uint32_t *CorrectedSingleBitErrorsPtr,
+                                                          uint32_t *DetectedDoubleBitErrorsPtr);
+
+/**
+ * Reads and clears the ECC adress registers of the table instance.
+ *
+ * When the table has an implementation mode of DCAM this function is not supported.
+ * see @ref tbl_mode_dep
+ *
+ * @param[in] CtxPtr                            Pointer to the table driver instance context
+ *
+ * @param[out] FailingAddressSingleBitErrorPtr  The address of the first single bit error detected and corrected
+ *                                              by the hardware scrubbing process. Additional errors might
+ *                                              have been detected during a hardware lookup and then corrected
+ *                                              dynamically, but this register only reflect the
+ *                                              errrors detected by hardware scrubbing.
+ *
+ * @param[out] FailingAddressDoubleBitErrorPtr The address of the first double-bit error detected by the
+ *                                              hardware scrubbing process.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
+
+XilSdnetReturnType XilSdnetTableGetEccAddressesClearOnRead(XilSdnetTableCtx *CtxPtr,
+                                                           uint32_t *FailingAddressSingleBitErrorPtr,
+                                                           uint32_t *FailingAddressDoubleBitErrorPtr);
+
+/**
+ * Rewrite all table memory contents to recover from ECC double-bit error.
+ *
+ * When the table has an implementation mode of DCAM this function is not supported.
+ * see @ref tbl_mode_dep
+ *
+ * @param[in] CtxPtr Pointer to the table driver instance context
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+*/
+
+XilSdnetReturnType XilSdnetTableRewrite(XilSdnetTableCtx *CtxPtr);
+
+
+/**
+ * Reset a table.
+ *
+ * @param[in] CtxPtr Pointer to the table driver instance context.
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
+XilSdnetReturnType XilSdnetTableReset(XilSdnetTableCtx *CtxPtr);
+
+
+/**
+ * Destroy the table driver instance
+ *
+ * All memory allocated by \ref XilSdnetTableInit is released.
+ *
+ * @param[in] CtxPtr    Pointer to the table driver instance context
+ *
+ * @return XIL_SDNET_SUCCESS if successful, otherwise an error code.
+ */
+XilSdnetReturnType XilSdnetTableExit(XilSdnetTableCtx *CtxPtr);
 
 #ifdef __cplusplus
 }

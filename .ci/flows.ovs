@@ -1,0 +1,2 @@
+table=0, priority=100, dl_dst=00:00:00:00:00:05, actions=output:ens16f0
+table=0, priority=100, dl_dst=00:00:00:00:00:06, actions=output:ens16f0

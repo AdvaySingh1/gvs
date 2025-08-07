@@ -49,5 +49,8 @@ sudo mkdir -p "$COLLECTOR_OVS_PATH"
 # sudo ovs-ofctl add-flows br0 "$RULES_PATH/$RULESET"
 
 
-  ovs-ofctl add-flow br0 "table=0, priority=100, dl_dst=00:00:00:00:00:05, actions=output:ens16f0"
-  ovs-ofctl add-flow br0 "table=0, priority=100, dl_dst=00:00:00:00:00:06, actions=output:ens16f1"
+  # ovs-ofctl add-flow br0 "table=0, priority=100, dl_dst=00:00:00:00:00:05, actions=output:ens16f0"
+  # ovs-ofctl add-flow br0 "table=0, priority=100, dl_dst=00:00:00:00:00:06, actions=output:ens16f1"
+
+
+ovs-ofctl add-flows br0 /home/advay/gigaflow/gvs/.ci/flows.ovs
