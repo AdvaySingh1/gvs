@@ -1,0 +1,26 @@
+/* confdefs.h */
+#define PACKAGE_NAME "openvswitch"
+#define PACKAGE_TARNAME "openvswitch"
+#define PACKAGE_VERSION "2.17.90"
+#define PACKAGE_STRING "openvswitch 2.17.90"
+#define PACKAGE_BUGREPORT "bugs@openvswitch.org"
+#define PACKAGE_URL ""
+#define PACKAGE "openvswitch"
+#define VERSION "2.17.90"
+#define STDC_HEADERS 1
+#define HAVE_SYS_TYPES_H 1
+#define HAVE_SYS_STAT_H 1
+#define HAVE_STDLIB_H 1
+#define HAVE_STRING_H 1
+#define HAVE_MEMORY_H 1
+#define HAVE_STRINGS_H 1
+#define HAVE_INTTYPES_H 1
+#define HAVE_STDINT_H 1
+#define HAVE_UNISTD_H 1
+#define __EXTENSIONS__ 1
+#define _ALL_SOURCE 1
+#define _GNU_SOURCE 1
+#define _POSIX_PTHREAD_SEMANTICS 1
+#define _TANDEM_SOURCE 1
+#define HAVE_DLFCN_H 1
+#define LT_OBJDIR ".libs/"
