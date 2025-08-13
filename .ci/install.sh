@@ -5,9 +5,9 @@ set -e
 apt-get update
 
 mkdir -p /tmp/gvs
-rm -rf /tmp/gvs/ovs
-cp -r . /tmp/gvs/ovs
-cd /tmp/gvs/ovs
+rm -rf /tmp/gvs/
+cp -r . /tmp/gvs/
+cd /tmp/gvs/
 git checkout main
 
 printf "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main" | tee /etc/apt/sources.list.d/llvm-toolchain-focal-12.list

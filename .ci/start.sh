@@ -22,7 +22,7 @@ ovs-vsctl --no-wait \
   set Open_vSwitch . other_config:gigaflow-paths-scaler=1 -- \
   set Open_vSwitch . other_config:gigaflow-batch-state-updates=true -- \
   set Open_vSwitch . other_config:gigaflow-warmup-batches=10 -- \
-  set Open_vSwitch . other_config:offload-gigaflow=true -- \
+  set Open_vSwitch . other_config:gigaflow-offload=true -- \
   set Open_vSwitch . other_config:hw-offload=true -- \
   set Open_vSwitch . other_config:hw-offload-p4sdnet=true
 
