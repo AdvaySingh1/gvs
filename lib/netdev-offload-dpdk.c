@@ -3473,35 +3473,15 @@ ovs_action_to_p4sdnet_action(struct nlattr *actions, size_t actions_len,
         {
         case OVS_ACTION_ATTR_OUTPUT:
         {
-            /*
-            TODO: determine approach
-            */
-
-            /*
-            Approach one: only set the table tag to 255 if it's the previous action
-            */
+            *entry_action_id =
+                p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION];
+            prev_action = P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION;
+            entry_action_params[P4SDNET_ACTION_PARAM_B0] = ovs_nl_attr_to_p4sdnet_port(a);
             if (prev_action == P4SDNET_NO_ACTION)
             {
-                // TODO
-                // *entry_action_id =
-                //     p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_FORWARD_ACTION];
-                // prev_action = P4SDNET_FORWARD_ACTION;
-                // entry_action_params[P4SDNET_ACTION_PARAM_B1] = ovs_nl_attr_to_p4sdnet_port(a);
-                *entry_action_id =
-                    p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION];
-                prev_action = P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION;
-                entry_action_params[P4SDNET_ACTION_PARAM_B0] = ovs_nl_attr_to_p4sdnet_port(a);
                 entry_action_params[P4SDNET_ACTION_PARAM_B1] = 0xff;
             }
-            else if (prev_action == P4SDNET_INSERT_NEXT_TABLE_TAG_ACTION)
-            {
-                *entry_action_id =
-                    p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION];
-                prev_action = P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION;
-                entry_action_params[P4SDNET_ACTION_PARAM_B0] = ovs_nl_attr_to_p4sdnet_port(a);
-                entry_action_params[P4SDNET_ACTION_PARAM_B1] = 0xff;
-            }
-            else
+            else if (prev_action != P4SDNET_INSERT_NEXT_TABLE_TAG_ACTION)
             {
                 VLOG_INFO("unsupported gigaflow action sequence: %d -> %d\n",
                           prev_action, P4SDNET_FORWARD_ACTION);
@@ -3509,18 +3489,6 @@ ovs_action_to_p4sdnet_action(struct nlattr *actions, size_t actions_len,
             }
             found_terminating_action = true;
             break;
-
-            /*
-            Approach two: regardless of what the previous action was, we should SET_NEXT_TABLE_TAG
-            to 255 before forwarding
-            */
-            // *entry_action_id =
-            //     p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION];
-            // prev_action = P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION;
-            // entry_action_params[P4SDNET_ACTION_PARAM_B0] = 0xff;
-            // entry_action_params[P4SDNET_ACTION_PARAM_B1] = ovs_nl_attr_to_p4sdnet_port(a);
-            // found_terminating_action = true;
-            // break;
         }
         case OVS_ACTION_ATTR_SET_MASKED:
         {
