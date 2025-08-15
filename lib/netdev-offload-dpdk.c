@@ -3568,7 +3568,8 @@ static uint32_t
 ovs_priority_to_p4sdnet_priority(uint32_t ovs_priority)
 {
 
-    return GIGAFLOW_STANDARD_PRIORITY - ovs_priority;
+    // return GIGAFLOW_STANDARD_PRIORITY - ovs_priority;
+    return GIGAFLOW_OFFLOAD_STANDARD_PRIORITY - ovs_priority;
     // if (ovs_priority >= GIGAFLOW_LOW_PRIORITY)
     // {
     //     return GIGAFLOW_OFFLOAD_LOW_PRIORITY;
