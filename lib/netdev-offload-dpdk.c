@@ -3265,13 +3265,13 @@ netdev_offload_p4sdnet_install_tmp_rules()
     tempKeyArray[P4SDNET_KEY_B0_TABLE_TAG] = 0x05;
     XilSdnetReturnType Result;
 
-    Result = XilSdnetTableInsert(
-        p4sdnet_offload_ctx.table_ctx_ptr[P4SDNET_GIGAFLOW_TABLE_3],
-        tempKeyArray,
-        tempMaskArray,
-        tempPriority,
-        tempActionID,
-        tempActionParamsArray);
+    // Result = XilSdnetTableInsert(
+    //     p4sdnet_offload_ctx.table_ctx_ptr[P4SDNET_GIGAFLOW_TABLE_3],
+    //     tempKeyArray,
+    //     tempMaskArray,
+    //     tempPriority,
+    //     tempActionID,
+    //     tempActionParamsArray);
     if (Result != XIL_SDNET_SUCCESS)
     {
         return Result;
