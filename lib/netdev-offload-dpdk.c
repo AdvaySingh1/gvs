@@ -3506,7 +3506,6 @@ ovs_action_to_p4sdnet_action(struct nlattr *actions, size_t actions_len,
         {
             *entry_action_id =
                 p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION];
-            prev_action = P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION;
             entry_action_params[P4SDNET_ACTION_PARAM_B0] = ovs_nl_attr_to_p4sdnet_port(a);
             if (prev_action == P4SDNET_NO_ACTION)
             {
@@ -3518,6 +3517,7 @@ ovs_action_to_p4sdnet_action(struct nlattr *actions, size_t actions_len,
                           prev_action, P4SDNET_FORWARD_ACTION);
                 return EOPNOTSUPP;
             }
+            prev_action = P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION;
             found_terminating_action = true;
             break;
         }
