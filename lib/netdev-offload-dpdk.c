@@ -3221,32 +3221,32 @@ netdev_offload_p4sdnet_install_default_rules()
     // printf("Default Rule: Forward To CPU Initialized\n");
     // return XIL_SDNET_SUCCESS;
 
-    uint8_t defaultKeyArray[GIGAFLOW_KEY_LEN];
-    uint8_t defaultMaskArray[GIGAFLOW_KEY_LEN];
-    uint32_t defaultPriority = GIGAFLOW_OFFLOAD_DEFAULT_PRIORITY;
-    uint32_t defaultActionID = P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION;
-    uint8_t defaultActionParamsArray[GIGAFLOW_ACTION_LEN] = {0x08, 0xff};
+    // uint8_t defaultKeyArray[GIGAFLOW_KEY_LEN];
+    // uint8_t defaultMaskArray[GIGAFLOW_KEY_LEN];
+    // uint32_t defaultPriority = GIGAFLOW_OFFLOAD_DEFAULT_PRIORITY;
+    // uint32_t defaultActionID = P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION;
+    // uint8_t defaultActionParamsArray[GIGAFLOW_ACTION_LEN] = {0x08, 0xff};
 
-    memset(defaultKeyArray, 0, GIGAFLOW_KEY_LEN);
-    memset(defaultMaskArray, 0, GIGAFLOW_KEY_LEN);
-    defaultMaskArray[P4SDNET_KEY_B0_TABLE_TAG] = 0xff;
-    defaultKeyArray[P4SDNET_KEY_B12_ETH_DST_B5] = 0x05;
-    defaultMaskArray[P4SDNET_KEY_B12_ETH_DST_B5] = 0xff;
-    XilSdnetReturnType Result;
+    // memset(defaultKeyArray, 0, GIGAFLOW_KEY_LEN);
+    // memset(defaultMaskArray, 0, GIGAFLOW_KEY_LEN);
+    // defaultMaskArray[P4SDNET_KEY_B0_TABLE_TAG] = 0xff;
+    // defaultKeyArray[P4SDNET_KEY_B12_ETH_DST_B5] = 0x05;
+    // defaultMaskArray[P4SDNET_KEY_B12_ETH_DST_B5] = 0xff;
+    // XilSdnetReturnType Result;
 
-    Result = XilSdnetTableInsert(
-        p4sdnet_offload_ctx.table_ctx_ptr[P4SDNET_GIGAFLOW_TABLE_0],
-        defaultKeyArray,
-        defaultMaskArray,
-        defaultPriority,
-        defaultActionID,
-        defaultActionParamsArray);
-    if (Result != XIL_SDNET_SUCCESS)
-    {
-        return Result;
-    }
-    printf("Default Rule: Forward To CPU Initialized\n");
-    return XIL_SDNET_SUCCESS;
+    // Result = XilSdnetTableInsert(
+    //     p4sdnet_offload_ctx.table_ctx_ptr[P4SDNET_GIGAFLOW_TABLE_0],
+    //     defaultKeyArray,
+    //     defaultMaskArray,
+    //     defaultPriority,
+    //     defaultActionID,
+    //     defaultActionParamsArray);
+    // if (Result != XIL_SDNET_SUCCESS)
+    // {
+    //     return Result;
+    // }
+    // printf("Default Rule: Forward To CPU Initialized\n");
+    // return XIL_SDNET_SUCCESS;
 }
 
 static int
