@@ -3315,13 +3315,22 @@ netdev_offload_p4sdnet_init_flow_api(struct netdev *netdev OVS_UNUSED)
 
         /* Initialize table context pointers with random values */
         for (int i = 0; i < P4SDNET_GIGAFLOW_TABLE_MAX; i++)
+        {
             Result = XilSdnetTargetGetTableByName(
                 &p4sdnet_offload_ctx.target_ctx,
                 p4sdnet_table_names[i],
                 &p4sdnet_offload_ctx.table_ctx_ptr[i]);
-        if (Result != XIL_SDNET_SUCCESS)
-        {
-            return Result;
+
+            if (Result != XIL_SDNET_SUCCESS)
+            {
+                return Result;
+            }
+            /* Reset table */
+            Result = XilSdnetTableReset(p4sdnet_offload_ctx.table_ctx_ptr[i]);
+            if (Result != XIL_SDNET_SUCCESS)
+            {
+                return Result;
+            }
         }
 
         /* Initialize action IDs with random values */
