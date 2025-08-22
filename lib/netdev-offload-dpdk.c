@@ -3496,6 +3496,13 @@ ovs_action_to_p4sdnet_action(struct nlattr *actions, size_t actions_len,
                              uint32_t *entry_action_id,
                              uint8_t entry_table_id)
 {
+
+    // *entry_action_id =
+    //     p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION];
+    // entry_action_params[P4SDNET_ACTION_PARAM_B0] = NETFPGA_CMAC_1;
+    // entry_action_params[P4SDNET_ACTION_PARAM_B1] = 0xff;
+    // return 0;
+
     // entry_action_params[1] = 0x04;
     // *entry_action_id = P4SDNET_FORWARD_ACTION;
     *entry_action_id =
@@ -3537,13 +3544,13 @@ ovs_action_to_p4sdnet_action(struct nlattr *actions, size_t actions_len,
                 *entry_action_id =
                     p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_ACTION];
                 entry_action_params[P4SDNET_ACTION_PARAM_B1] = ovs_nl_attr_to_p4sdnet_table_tag(a);
-                if (entry_action_params[P4SDNET_ACTION_PARAM_B1] == 0xff)
-                {
-                    found_terminating_action = true;
-                    *entry_action_id =
-                        p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION];
-                    entry_action_params[P4SDNET_ACTION_PARAM_B0] = NETFPGA_CMAC_1;
-                }
+                // if (entry_action_params[P4SDNET_ACTION_PARAM_B1] == 0xff)
+                // {
+                //     found_terminating_action = true;
+                //     *entry_action_id =
+                //         p4sdnet_offload_ctx.action_id[entry_table_id][P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION];
+                //     entry_action_params[P4SDNET_ACTION_PARAM_B0] = NETFPGA_CMAC_1;
+                // }
                 prev_action = P4SDNET_INSERT_NEXT_TABLE_TAG_ACTION;
             }
             else
