@@ -3326,11 +3326,11 @@ netdev_offload_p4sdnet_init_flow_api(struct netdev *netdev OVS_UNUSED)
                 return Result;
             }
             /* Reset table */
-            Result = XilSdnetTableReset(p4sdnet_offload_ctx.table_ctx_ptr[i]);
-            if (Result != XIL_SDNET_SUCCESS)
-            {
-                return Result;
-            }
+            // Result = XilSdnetTableReset(p4sdnet_offload_ctx.table_ctx_ptr[i]);
+            // if (Result != XIL_SDNET_SUCCESS)
+            // {
+            //     return Result;
+            // }
         }
 
         /* Initialize action IDs with random values */
