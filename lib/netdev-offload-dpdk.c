@@ -3250,37 +3250,6 @@ netdev_offload_p4sdnet_install_default_rules()
 }
 
 static int
-netdev_offload_p4sdnet_install_tmp_rules()
-{
-    VLOG_INFO("calling netdev_offload_p4sdnet_install_tmp_rules()\n");
-    uint8_t tempKeyArray[GIGAFLOW_KEY_LEN];
-    uint8_t tempMaskArray[GIGAFLOW_KEY_LEN];
-    uint32_t tempPriority = GIGAFLOW_OFFLOAD_STANDARD_PRIORITY;
-    uint32_t tempActionID = P4SDNET_INSERT_NEXT_TABLE_TAG_AND_FORWARD_ACTION;
-    uint8_t tempActionParamsArray[GIGAFLOW_ACTION_LEN] = {0x04, 0xff};
-
-    memset(tempKeyArray, 0, GIGAFLOW_KEY_LEN);
-    memset(tempMaskArray, 0, GIGAFLOW_KEY_LEN);
-    tempMaskArray[P4SDNET_KEY_B0_TABLE_TAG] = 0xff;
-    tempKeyArray[P4SDNET_KEY_B0_TABLE_TAG] = 0x05;
-    XilSdnetReturnType Result;
-
-    // Result = XilSdnetTableInsert(
-    //     p4sdnet_offload_ctx.table_ctx_ptr[P4SDNET_GIGAFLOW_TABLE_3],
-    //     tempKeyArray,
-    //     tempMaskArray,
-    //     tempPriority,
-    //     tempActionID,
-    //     tempActionParamsArray);
-    if (Result != XIL_SDNET_SUCCESS)
-    {
-        return Result;
-    }
-    printf("temp Rule: Forward To CPU Initialized\n");
-    return XIL_SDNET_SUCCESS;
-}
-
-static int
 netdev_offload_p4sdnet_init_flow_api(struct netdev *netdev OVS_UNUSED)
 {
     VLOG_INFO("calling netdev_p4sdnet_offload_dpdk_init_flow_api()\n");
@@ -3326,11 +3295,11 @@ netdev_offload_p4sdnet_init_flow_api(struct netdev *netdev OVS_UNUSED)
                 return Result;
             }
             /* Reset table */
-            // Result = XilSdnetTableReset(p4sdnet_offload_ctx.table_ctx_ptr[i]);
-            // if (Result != XIL_SDNET_SUCCESS)
-            // {
-            //     return Result;
-            // }
+            Result = XilSdnetTableReset(p4sdnet_offload_ctx.table_ctx_ptr[i]);
+            if (Result != XIL_SDNET_SUCCESS)
+            {
+                return Result;
+            }
         }
 
         /* Initialize action IDs with random values */
@@ -3682,8 +3651,6 @@ netdev_offload_p4sdnet_flow_put(struct netdev *netdev, struct match *match,
                   entry_action_params[0], entry_action_params[1]);
         return EOPNOTSUPP;
     }
-
-    netdev_offload_p4sdnet_install_tmp_rules();
 
     return ret;
     // #endif
